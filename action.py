@@ -12,15 +12,21 @@ except NameError:
 from csv import reader, unix_dialect, writer
 
 try:
-    from qt.core import QMenu, QToolButton
+    from qt.core import QHBoxLayout, QLabel, QMenu, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
 except ImportError:
-    from PyQt5.Qt import QMenu, QToolButton
+    from PyQt5.Qt import QHBoxLayout, QLabel, QMenu, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from calibre.gui2.actions import InterfaceAction
+from calibre.gui2.widgets2 import Dialog
 
-from .common_utils import GUI, PLUGIN_NAME, get_icon
+from .common_utils import GUI, PLUGIN_NAME, PREFS_json, debug_print, get_icon
 from .common_utils.menus import create_menu_action_unique
-from .config import PLUGIN_ICON
+from .common_utils.widgets import ImageTitleLayout
+
+PLUGIN_ICON = 'images/plugin.png'
+
+# This is where all preferences for this plugin are stored
+PREFS = PREFS_json()
 
 
 class CSVMetadataAction(InterfaceAction):
@@ -55,19 +61,10 @@ class CSVMetadataAction(InterfaceAction):
                                         triggered=self.export_metadata,
                                         unique_name='&Export CSV')
         
-        self.menu.addSeparator()
-        create_menu_action_unique(self, m, _('&Customize plugin…'), 'config.png',
-                                        triggered=self.show_configuration,
-                                        unique_name='&Customize plugin',
-                                        shortcut=False)
-        
         GUI.keyboard.finalize()
     
     def toolbar_triggered(self):
         self.update_metadata()
-    
-    def show_configuration(self):
-        self.interface_action_base_plugin.do_user_config(GUI)
     
     def update_metadata(self):
         pass
