@@ -9,7 +9,7 @@ try:
 except NameError:
     pass  # load_translations() added in calibre 1.9
 
-from csv import reader, unix_dialect, writer
+from csv import QUOTE_ALL, Dialect, unix_dialect, reader, writer
 
 try:
     from qt.core import QHBoxLayout, QLabel, QMenu, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
@@ -17,7 +17,7 @@ except ImportError:
     from PyQt5.Qt import QHBoxLayout, QLabel, QMenu, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from calibre.gui2.actions import InterfaceAction
-from calibre.gui2.widgets2 import Dialog
+from calibre.gui2.widgets2 import Dialog, HTMLDisplay
 
 from .common_utils import GUI, PLUGIN_NAME, PREFS_json, debug_print, get_icon
 from .common_utils.menus import create_menu_action_unique
@@ -27,6 +27,42 @@ PLUGIN_ICON = 'images/plugin.png'
 
 # This is where all preferences for this plugin are stored
 PREFS = PREFS_json()
+
+
+class CSV(Dialect):
+    delimiter = ','
+    quotechar = '"'
+    doublequote = True
+    skipinitialspace = False
+    lineterminator = '\n'
+    quoting = QUOTE_ALL
+
+
+class CSVformatDialog(Dialog):
+    def __init__(self, parent=None):
+        Dialog.__init__(self,
+            title=_('CSV Format info'),
+            name='plugin.CSVMetadata:CSVformatDialog',
+            parent=parent,
+        )
+
+    def setup_ui(self):
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        
+        import inspect
+        lines, num = inspect.getsourcelines(CSV)
+        
+        html = '<p>' + '</p>\n<p>'.join([
+            _('The plugin use the default library <code>csv</code> to import and convert files.'
+              'Here the code of <code>csv.Dialect</code> class used:'),
+        ]) + '</p>'
+        html += '<pre>' +''.join(lines)+ '</pre>'
+        
+        l.addLayout(ImageTitleLayout(PLUGIN_ICON, 'CSV format', self))
+        e = HTMLDisplay(self)
+        e.setHtml(html)
+        l.addWidget(e)
 
 
 class CSVMetadataAction(InterfaceAction):
@@ -61,10 +97,19 @@ class CSVMetadataAction(InterfaceAction):
                                         triggered=self.export_metadata,
                                         unique_name='&Export CSV')
         
+        self.menu.addSeparator()
+        create_menu_action_unique(self, m, _('&About the CSV Format'), None,
+                                        triggered=self.show_csv_format,
+                                        unique_name='&About the CSV Format',
+                                        shortcut=False)
+        
         GUI.keyboard.finalize()
     
     def toolbar_triggered(self):
         self.update_metadata()
+    
+    def show_csv_format(self):
+        CSVformatDialog(GUI).exec()
     
     def update_metadata(self):
         pass
