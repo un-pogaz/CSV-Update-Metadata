@@ -9,7 +9,7 @@ try:
 except NameError:
     pass  # load_translations() added in calibre 1.9
 
-from csv import QUOTE_ALL, Dialect, unix_dialect, reader, writer
+from csv import QUOTE_ALL, Dialect, reader, writer
 
 try:
     from qt.core import QHBoxLayout, QLabel, QMenu, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget
@@ -50,19 +50,53 @@ class CSVformatDialog(Dialog):
         l = QVBoxLayout(self)
         self.setLayout(l)
         
+        l.addLayout(ImageTitleLayout(PLUGIN_ICON, 'CSV format', self))
+        body = HTMLDisplay(self)
+        l.addWidget(body)
+        
         import inspect
         lines, num = inspect.getsourcelines(CSV)
+        csv_code = ''.join(lines)
         
-        html = '<p>' + '</p>\n<p>'.join([
-            _('The plugin use the default library <code>csv</code> to import and convert files.'
-              'Here the code of <code>csv.Dialect</code> class used:'),
-        ]) + '</p>'
-        html += '<pre>' +''.join(lines)+ '</pre>'
+        rslt = []
+        def html_builder(tag, content) -> str:
+            return f'<{tag}>{content}</{tag}>'
+        def list_builder(*args) -> str:
+            lines = '\n'.join([html_builder('li', a) for a in args])
+            return html_builder('ul', ('\n'+lines+'\n').strip())
+        def append(tag, content):
+            rslt.append(html_builder(tag, content))
         
-        l.addLayout(ImageTitleLayout(PLUGIN_ICON, 'CSV format', self))
-        e = HTMLDisplay(self)
-        e.setHtml(html)
-        l.addWidget(e)
+        append('p', _('A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. '
+                      'A CSV file stores tabular data in plain text. Each line of the file is a data record. '
+                      'Each record consists of one or more values, separated by commas. '
+                      'The use of the comma as a value separator is the source of the name for this file format.'))
+        append('p', _('The CSV format supported by the plugin is the following:'))
+        rslt.append(list_builder(
+            _('The entire file must be "saved" in the Unicode (UTF-8) character set (not ASCII).'),
+            _('The value delimiter (column separator) must be a single comma (not tab-separated or fixed width).'),
+            _('The CSV require at least two columns.'),
+            _('The CSV require at least two rows/lines:')+'\n'+list_builder(
+                _('The first row must be a "header" row which contains the double-quoted unique textual name of each column.'),
+                _('All rows after the first row must contain either textual values or empty within each and every column.'),
+                _('All rows must have the same number of double-quoted textual columns as the "header" row.'),
+            ),
+            _('All values must be double-quoted.')+'\n'+list_builder(
+                _('If you open your CSV file in a simple text editor, you should not find a row that ends with '
+                  'a simple comma (,), or has 2 (,,) or more (,,,,) commas together.'),
+                _('To include a double-quote character inside a value, write two double-quote consecutively "".'),
+            ),
+            _('Leading and trailing spaces will be removed from each value automatically.'),
+            _('Empty value will be skipped (no edit action).'),
+            _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
+        ))
+        append('p', '<br>')
+        rslt.append('<hr>')
+        append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
+                      'For reference, here the code of <code>csv.Dialect</code> class used:'))
+        append('pre', csv_code)
+        
+        body.setHtml('\n'.join(rslt))
 
 
 class CSVMetadataAction(InterfaceAction):
