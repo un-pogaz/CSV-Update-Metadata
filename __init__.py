@@ -27,7 +27,7 @@ class ActionCSVMetadata(InterfaceActionBase):
     description             = _('Update Metadata from a CSV file template')
     supported_platforms     = ['windows', 'osx', 'linux']
     author                  = 'un_pogaz'
-    version                 = (0, 9, 0)
+    version                 = (0, 1, 0)
     minimum_calibre_version = (5, 0, 0)
     
     actual_plugin = __name__+'.action:CSVMetadataAction'
