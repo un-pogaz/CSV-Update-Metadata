@@ -250,6 +250,7 @@ class ExportCSVdialog(Dialog):
         self.list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.list.setDefaultDropAction(Qt.DropAction.CopyAction if ismacos else Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
+        self.list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         
         l.addWidget(self.list)
         
