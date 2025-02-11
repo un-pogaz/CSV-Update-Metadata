@@ -10,7 +10,7 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
-from typing import List
+from typing import List, Tuple
 
 try:
     from qt.core import (
@@ -23,6 +23,8 @@ try:
         QMenu,
         QPushButton,
         Qt,
+        QTableWidget,
+        QTableWidgetItem,
         QToolButton,
         QVBoxLayout,
     )
@@ -37,12 +39,14 @@ except ImportError:
         QMenu,
         QPushButton,
         Qt,
+        QTableWidget,
+        QTableWidgetItem,
         QToolButton,
         QVBoxLayout,
     )
 
 from calibre.constants import ismacos
-from calibre.gui2 import FileDialog, choose_files
+from calibre.gui2 import FileDialog, choose_files, error_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
 
@@ -178,7 +182,26 @@ class CSVMetadataAction(InterfaceAction):
         CSVformatDialog(GUI).exec()
     
     def update_metadata(self):
-        pass
+        path = pick_csv_to_load()
+        if not path:
+            return
+        try:
+            header, data = load_csv_file(path)
+        except Exception as err:
+            msg = [
+                _('The selected CSV fail to be loaded because is a malformed format.'),
+                _('To be sure to use a valid format, check the section "About the CSV Format".'),
+                f'<b>{err.__class__.__name__}:</b> {err}'
+            ]
+            error_dialog(
+                GUI,
+                _('Malformed CSV format'),
+                '<br>'.join(msg),
+                show=True,
+                show_copy_button=False,
+            )
+        else:
+            UpdateCSVdialog(path, header, data, GUI).exec()
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
@@ -338,3 +361,90 @@ class ExportCSVdialog(Dialog):
                 writer.writerow(row)
         
         Dialog.accept(self)
+
+
+def load_csv_file(csv_path) -> Tuple[List[str], List[List[str]]]:
+    with open(csv_path, encoding='utf-8') as f:
+        raw = f.read().splitlines(False)
+    raw = list(csv.reader(raw, CSV))
+    
+    header = raw[0]
+    data = raw[1:]
+    
+    return header, data
+
+
+class ViewCSVdataDialog(Dialog):
+    def __init__(self, header: List[str], data: List[List[str]], parent=None):
+        self.header = header or []
+        self.data = data or []
+        Dialog.__init__(self,
+            title=_('View CSV content data'),
+            name='plugin.CSVMetadata:ViewCSVdataDialog',
+            parent=parent,
+        )
+
+    def setup_ui(self):
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        
+        self.table = t = QTableWidget()
+        t.setAlternatingRowColors(True)
+        t.setSelectionMode(QTableWidget.ExtendedSelection)
+        t.setSortingEnabled(False)
+        t.setMinimumSize(400, 200)
+        l.addWidget(t)
+        
+        t.setColumnCount(len(self.header))
+        t.setHorizontalHeaderLabels(self.header)
+        t.verticalHeader().setDefaultSectionSize(24)
+        
+        t.setRowCount(len(self.data))
+        for idr,row in enumerate(self.data):
+            for idc,data in enumerate(row):
+                item = QTableWidgetItem(data)
+                item.setFlags(Qt.ItemIsEnabled)
+                t.setItem(idr, idc, item)
+
+
+class UpdateCSVdialog(Dialog):
+    def __init__(self, csv_path: str, header: List[str], data: List[List[str]], parent=None):
+        self.csv_path = csv_path
+        self.csv_header = header
+        self.csv_data = data
+        Dialog.__init__(self,
+            title=_('Update metadata from CSV'),
+            name='plugin.CSVMetadata:UpdateCSVdialog',
+            parent=parent,
+        )
+
+    def setup_ui(self):
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        
+        path_label = QLabel(self.csv_path)
+        font = path_label.font()
+        font.setBold(True)
+        path_label.setFont(font)
+        path_label.setAlignment(Qt.AlignCenter)
+        l.addWidget(path_label)
+        
+        view_layout = QHBoxLayout()
+        l.addLayout(view_layout)
+        view_layout.setAlignment(Qt.AlignCenter)
+        self.view_button = QPushButton(_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)))
+        self.view_button.setToolTip(_('Click on this button to view the raw content of the CSV file loaded.'))
+        font = self.view_button.font()
+        font.setBold(True)
+        self.view_button.setFont(font)
+        self.view_button.clicked.connect(self.view_raw_content)
+        view_layout.addStretch()
+        view_layout.addWidget(self.view_button)
+        view_layout.addStretch()
+        
+        l.addStretch()
+        
+        l.addWidget(self.bb)
+
+    def view_raw_content(self):
+        ViewCSVdataDialog(self.csv_header, self.csv_data, self).exec()
