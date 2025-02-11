@@ -199,17 +199,6 @@ def pick_csv_to_load(parent=None) -> str:
     return archives[0]
 
 
-def field_name(field):
-    if field == 'isbn':
-        return 'ISBN'
-    if field == 'library_name':
-        return _('Library name')
-    if field.endswith('_index'):
-        return field_name(field[:-len('_index')]) + ' ' + _('Number')
-    fm = current_db().field_metadata
-    return fm[field].get('name') or field
-
-
 def pick_csv_to_export(parent=None) -> str:
     fd = FileDialog(parent=parent or GUI,
         name='csv dialog',
@@ -221,6 +210,17 @@ def pick_csv_to_export(parent=None) -> str:
     if not fd.accepted:
         return None
     return fd.get_files()[0]
+
+
+def field_name(field):
+    if field == 'isbn':
+        return 'ISBN'
+    if field == 'library_name':
+        return _('Library name')
+    if field.endswith('_index'):
+        return field_name(field[:-len('_index')]) + ' ' + _('Number')
+    fm = current_db().field_metadata
+    return fm[field].get('name') or field
 
 
 class ListColumnItem(QListWidgetItem):
