@@ -187,6 +187,17 @@ class CSVMetadataAction(InterfaceAction):
             return
         try:
             header, data = load_csv_file(path)
+            if not data:
+                raise ValueError('The input CSV need at least 2 rows (one for the header and the others for the data).')
+            if len(header) < 2:
+                raise ValueError('The input CSV need at least 2 columns (one has reference and the others for the data).')
+            for i in range(len(header)):
+                header[i] = header[i].strip()
+                if not header[i]:
+                    raise ValueError(f'One column header is empty, index {i+1}.')
+            for v in header:
+                if header.count(v) > 1:
+                    raise ValueError('Their is a duplicate column header.')
         except Exception as err:
             msg = [
                 _('The selected CSV fail to be loaded because is a malformed format.'),
@@ -201,6 +212,13 @@ class CSVMetadataAction(InterfaceAction):
                 show_copy_button=False,
             )
         else:
+            h = len(header)
+            for i,row in enumerate(data):
+                if len(row) < h:
+                    row.extend('' for x in range(h-len(row)))
+                if len(row) > h:
+                    data[i] = row[:h]
+            
             UpdateCSVdialog(path, header, data, GUI).exec()
     
     def export_metadata(self):
