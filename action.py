@@ -50,7 +50,7 @@ from calibre.gui2 import FileDialog, choose_files, error_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
 
-from .common_utils import GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_icon
+from .common_utils import CALIBRE_VERSION, GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_icon
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout
@@ -255,6 +255,8 @@ def get_all_fields() -> Set[str]:
     db = current_db()
     rslt = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
     rslt.update(db.custom_field_keys())
+    if CALIBRE_VERSION >= (9,00,0):
+        rslt.add('pages')
     return rslt
 
 
