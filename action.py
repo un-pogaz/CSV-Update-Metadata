@@ -250,6 +250,14 @@ def pick_csv_to_export(parent=None) -> str:
     return fd.get_files()[0]
 
 
+def get_all_fields() -> Dict[str, dict]:
+    from calibre.library.catalogs import FIELDS
+    db = current_db()
+    rslt = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
+    rslt.update(db.custom_field_keys())
+    return rslt
+
+
 def field_name(field):
     if field == 'isbn':
         return 'ISBN'
@@ -311,10 +319,6 @@ class ExportCSVdialog(Dialog):
         self.poplate_list()
 
     def poplate_list(self):
-        from calibre.library.catalogs import FIELDS
-        db = current_db()
-        self.all_fields = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
-        self.all_fields.update(db.custom_field_keys())
         sort_order = LIBRARY_PREFS['sort_order']
         fields = LIBRARY_PREFS['fields']
         fm = current_db().field_metadata
@@ -323,7 +327,7 @@ class ExportCSVdialog(Dialog):
             return sort_order.get(field, 1000), field_name(field), field
 
         self.list.clear()
-        for idx, name, field in sorted(map(key_buider, self.all_fields)):
+        for idx, name, field in sorted(map(key_buider, get_all_fields())):
             item = ListColumnItem(field, name, self.list)
             item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
             if field.startswith('#') and fm[field]['datatype'] == 'series':
