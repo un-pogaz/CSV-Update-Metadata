@@ -10,7 +10,7 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 try:
     from qt.core import (
@@ -250,7 +250,7 @@ def pick_csv_to_export(parent=None) -> str:
     return fd.get_files()[0]
 
 
-def get_all_fields() -> Dict[str, dict]:
+def get_all_fields() -> Set[str]:
     from calibre.library.catalogs import FIELDS
     db = current_db()
     rslt = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
