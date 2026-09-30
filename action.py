@@ -302,7 +302,7 @@ class ExportCSVdialog(Dialog):
         
         l.addWidget(self.list)
         
-        h = QHBoxLayout(self)
+        h = QHBoxLayout()
         l.addLayout(h)
         h.addWidget(QLabel(_('Drag and drop to re-arrange fields'), self))
         h.addStretch()
