@@ -419,6 +419,10 @@ class ViewCSVdataDialog(Dialog):
             for idc,data in enumerate(row):
                 item = QTableWidgetItem(data)
                 item.setFlags(Qt.ItemIsEnabled)
+                if data == 'NULL':
+                    font = item.font()
+                    font.setItalic(True)
+                    item.setFont(font)
                 t.setItem(idr, idc, item)
 
 
