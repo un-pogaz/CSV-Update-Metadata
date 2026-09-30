@@ -109,7 +109,7 @@ class CSVformatDialog(Dialog):
                       'The use of the comma as a value separator is the source of the name for this file format.'))
         append('p', _('The CSV format supported by the plugin is the following:'))
         rslt.append(list_builder(
-            _('The entire file must be "saved" in the Unicode (UTF-8) character set (not ASCII).'),
+            _('The entire file must be "saved" in the Unicode (UTF-8) character set.'),
             _('The value delimiter (column separator) must be a single comma (not tab-separated or fixed width).'),
             _('The CSV require at least two columns.'),
             _('The CSV require at least two rows/lines:')+'\n'+list_builder(
@@ -117,16 +117,13 @@ class CSVformatDialog(Dialog):
                 _('All rows after the first row must contain either textual values or empty within each and every column.'),
                 _('All rows must have the same number of double-quoted textual columns as the "header" row.'),
             ),
-            _('All values must be double-quoted.')+'\n'+list_builder(
-                _('If you open your CSV file in a simple text editor, you should not find a row that ends with '
-                  'a simple comma (,), or has 2 (,,) or more (,,,,) commas together.'),
+            _('All values should preferably be double-quoted.')+'\n'+list_builder(
                 _('To include a double-quote character inside a value, write two double-quote consecutively "".'),
             ),
             _('Leading and trailing spaces will be removed from each value automatically.'),
             _('Empty value will be skipped (no edit action).'),
             _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
         ))
-        append('p', '<br>')
         rslt.append('<hr>')
         append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
