@@ -27,6 +27,7 @@ try:
         QTableWidgetItem,
         QToolButton,
         QVBoxLayout,
+        QWidget,
     )
 except ImportError:
     from PyQt5.Qt import (
@@ -43,6 +44,7 @@ except ImportError:
         QTableWidgetItem,
         QToolButton,
         QVBoxLayout,
+        QWidget,
     )
 
 from calibre.constants import ismacos
@@ -395,6 +397,13 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             writer.writerow(row)
 
 
+def item_style(item: QWidget, *, bold=False, italic=False):
+    font = item.font()
+    font.setBold(bold)
+    font.setItalic(italic)
+    item.setFont(font)
+
+
 class ViewCSVdataDialog(Dialog):
     def __init__(self, header: List[str], data: List[List[str]], parent=None):
         self.header = header or []
@@ -426,9 +435,7 @@ class ViewCSVdataDialog(Dialog):
                 item = QTableWidgetItem(data)
                 item.setFlags(Qt.ItemIsEnabled)
                 if data == 'NULL':
-                    font = item.font()
-                    font.setItalic(True)
-                    item.setFont(font)
+                    item_style(item, italic=True)
                 t.setItem(idr, idc, item)
 
 
@@ -448,9 +455,7 @@ class UpdateCSVdialog(Dialog):
         self.setLayout(l)
         
         path_label = QLabel(self.csv_path)
-        font = path_label.font()
-        font.setBold(True)
-        path_label.setFont(font)
+        item_style(path_label, bold=True)
         path_label.setAlignment(Qt.AlignCenter)
         l.addWidget(path_label)
         
@@ -459,9 +464,7 @@ class UpdateCSVdialog(Dialog):
         view_layout.setAlignment(Qt.AlignCenter)
         self.button_raw_data = QPushButton(_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)))
         self.button_raw_data.setToolTip(_('Click on this button to view the raw content of the CSV file loaded.'))
-        font = self.button_raw_data.font()
-        font.setBold(True)
-        self.button_raw_data.setFont(font)
+        item_style(self.button_raw_data, bold=True)
         self.button_raw_data.clicked.connect(self.view_raw_data)
         view_layout.addStretch()
         view_layout.addWidget(self.button_raw_data)
