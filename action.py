@@ -535,7 +535,7 @@ class UpdateCSVdialog(Dialog):
             field_out = KeyValueComboBox(writable_fields, parent=scroll)
             field_out.setCurrentIndex(-1)
             h = QHBoxLayout()
-            h.addWidget(QLabel('==>'))
+            h.addWidget(QLabel('⟹'))
             h.addWidget(field_out)
             self.data_selector.addRow(header, h)
             self.csv_widget[idx] = field_out
