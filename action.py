@@ -355,7 +355,7 @@ class ExportCSVdialog(Dialog):
         fields = {}
         for row in range(self.list.count()):
             item = self.list.item(row)
-            sort_order[row] = item.field
+            sort_order[item.field] = row
             if item.checkState() == Qt.CheckState.Checked:
                 fields[item.field] = item.display_name
         if not fields:
