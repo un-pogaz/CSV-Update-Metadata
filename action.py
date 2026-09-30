@@ -10,7 +10,7 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 try:
     from qt.core import (
@@ -366,30 +366,30 @@ class ExportCSVdialog(Dialog):
         
         LIBRARY_PREFS['sort_order'] = sort_order
         LIBRARY_PREFS['fields'] = list(fields.keys())
-        db = current_db().new_api
-        
-        with open(file, 'w', encoding='utf-8', newline='\n') as f:
-            writer = csv.writer(f, CSV)
-            writer.writerow(fields.values())
-            for id in self.ids:
-                row = []
-                mi = db.get_metadata(id)
-                for field in fields.keys():
-                    row.append(mi.format_field(field, False)[1])
-                writer.writerow(row)
-        
+        export_csv_file(file, fields, self.ids)
         Dialog.accept(self)
 
 
-def load_csv_file(csv_path) -> Tuple[List[str], List[List[str]]]:
+def load_csv_file(csv_path: str) -> Tuple[List[str], List[List[str]]]:
     with open(csv_path, encoding='utf-8') as f:
         raw = f.read().splitlines(False)
     raw = list(csv.reader(raw, CSV))
-    
     header = raw[0]
     data = raw[1:]
-    
     return header, data
+
+
+def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> None:
+    db = current_db().new_api
+    with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
+        writer = csv.writer(f, CSV)
+        writer.writerow(fields.values())
+        for id in ids:
+            row = []
+            mi = db.get_metadata(id)
+            for field in fields.keys():
+                row.append(mi.format_field(field, False)[1])
+            writer.writerow(row)
 
 
 class ViewCSVdataDialog(Dialog):
