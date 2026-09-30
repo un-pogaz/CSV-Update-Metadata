@@ -16,12 +16,15 @@ try:
     from qt.core import (
         QAbstractItemView,
         QFileDialog,
+        QFormLayout,
+        QFrame,
         QHBoxLayout,
         QLabel,
         QListWidget,
         QListWidgetItem,
         QMenu,
         QPushButton,
+        QScrollArea,
         Qt,
         QTableWidget,
         QTableWidgetItem,
@@ -33,12 +36,15 @@ except ImportError:
     from PyQt5.Qt import (
         QAbstractItemView,
         QFileDialog,
+        QFormLayout,
+        QFrame,
         QHBoxLayout,
         QLabel,
         QListWidget,
         QListWidgetItem,
         QMenu,
         QPushButton,
+        QScrollArea,
         Qt,
         QTableWidget,
         QTableWidgetItem,
@@ -51,11 +57,13 @@ from calibre.constants import ismacos
 from calibre.gui2 import FileDialog, choose_files, error_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
+from calibre.utils.icu import sort_key
 
 from .common_utils import CALIBRE_VERSION, GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_icon
+from .common_utils.columns import ColumnMetadata, get_columns_where
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
-from .common_utils.widgets import ImageTitleLayout
+from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
 
 PLUGIN_ICON = 'images/plugin.png'
 
@@ -262,14 +270,26 @@ def get_all_fields() -> Set[str]:
     return rslt
 
 
-def field_name(field):
+def get_writable_fields() -> Set[str]:
+    all_fields = get_all_fields()
+    def predicate(col: ColumnMetadata):
+        if col.name not in all_fields:
+            return False
+        if col.is_composite:
+            return False
+        if col.name in {'library_name', 'id', 'uuid', 'formats', 'size', 'pages'}:
+            return False
+        return True
+    return set(get_columns_where(predicate).keys())
+
+
+def field_name(fm, field):
     if field == 'isbn':
         return 'ISBN'
     if field == 'library_name':
         return _('Library name')
     if field.endswith('_index'):
-        return field_name(field[:-len('_index')]) + ' ' + _('Number')
-    fm = current_db().field_metadata
+        return field_name(fm, field[:-len('_index')]) + ' ' + _('Number')
     return fm[field].get('name') or field
 
 
@@ -328,7 +348,7 @@ class ExportCSVdialog(Dialog):
         fm = current_db().field_metadata
 
         def key_buider(field):
-            return sort_order.get(field, 1000), field_name(field), field
+            return sort_order.get(field, 1000), field_name(fm, field), field
 
         self.list.clear()
         for idx, name, field in sorted(map(key_buider, get_all_fields())):
@@ -444,6 +464,7 @@ class UpdateCSVdialog(Dialog):
         self.csv_path = csv_path
         self.csv_header = header
         self.csv_data = data
+        self.csv_widget: Dict[int, KeyValueComboBox] = {}
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -470,9 +491,72 @@ class UpdateCSVdialog(Dialog):
         view_layout.addWidget(self.button_raw_data)
         view_layout.addStretch()
         
-        l.addStretch()
+        fm = current_db().field_metadata
+        scroll = QScrollArea(self)
+        l.addWidget(scroll)
+        layout = QVBoxLayout(scroll)
+        scroll.setLayout(layout)
         
-        l.addWidget(self.bb)
+        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_header)}
+        all_fields = dict(sorted(
+            ((n,f'{field_name(fm, n)} ({n})') for n in get_all_fields()),
+            key=lambda x:sort_key(x[1]),
+        ))
+        for n in ['library_name']:
+            all_fields.pop(n, None)
+        writable_fields = {'':''}
+        writable_fields.update(sorted(
+            ((n,f'{field_name(fm, n)} ({n})') for n in get_writable_fields()),
+            key=lambda x:sort_key(x[1]),
+        ))
+        
+        self.reference_header = NoWheelComboBox(scroll)
+        self.reference_header.addItems(all_headers.values())
+        self.reference_header.setCurrentIndex(-1)
+        
+        self.reference_field = KeyValueComboBox(all_fields, parent=scroll)
+        self.reference_field.setCurrentIndex(-1)
+        
+        reference_selector = QFormLayout()
+        reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
+        reference_selector.addRow(_('Book field to match:'), self.reference_field)
+        layout.addLayout(reference_selector)
+        
+        self.frame = QFrame()
+        self.frame.setFrameShape(QFrame.HLine)
+        self.frame.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(self.frame)
+        
+        self.data_selector = QFormLayout()
+        layout.addLayout(self.data_selector)
+        layout.addStretch()
+        
+        for idx, header in all_headers.items():
+            field_out = KeyValueComboBox(writable_fields, parent=scroll)
+            field_out.setCurrentIndex(-1)
+            h = QHBoxLayout()
+            h.addWidget(QLabel('==>'))
+            h.addWidget(field_out)
+            self.data_selector.addRow(header, h)
+            self.csv_widget[idx] = field_out
+        
+        button_layout = QHBoxLayout()
+        l.addLayout(button_layout)
+        
+        self.button_preview_data = QPushButton(get_icon('search.png'), _('Preview update'))
+        self.button_preview_data.clicked.connect(self.preview_update_data)
+        self.button_update_data = QPushButton(get_icon('ok.png'), _('Update the metadata'))
+        self.button_update_data.clicked.connect(self.accept)
+        
+        button_layout.addWidget(self.button_preview_data)
+        button_layout.addStretch()
+        button_layout.addWidget(self.button_update_data)
+
+    def accept(self):
+        Dialog.accept(self)
 
     def view_raw_data(self):
         ViewCSVdataDialog(self.csv_header, self.csv_data, self).exec()
+
+    def preview_update_data(self):
+        pass
