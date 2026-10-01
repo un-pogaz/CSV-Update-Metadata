@@ -264,8 +264,12 @@ def pick_csv_to_export(parent=None) -> str:
 def get_all_fields() -> Set[str]:
     from calibre.library.catalogs import FIELDS
     db = current_db()
+    fm = db.field_metadata
     rslt = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
-    rslt.update(db.custom_field_keys())
+    for field in db.custom_field_keys():
+        rslt.add(field)
+        if field.startswith('#') and fm[field]['datatype'] == 'series':
+            rslt.add(field + '_index')
     if CALIBRE_VERSION >= (9,00,0):
         rslt.add('pages')
     return rslt
@@ -355,10 +359,6 @@ class ExportCSVdialog(Dialog):
         for idx, name, field in sorted(map(key_buider, get_all_fields())):
             item = ListColumnItem(field, name, self.list)
             item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
-            if field.startswith('#') and fm[field]['datatype'] == 'series':
-                field += '_index'
-                item = ListColumnItem(field, name, self.list)
-                item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
 
     def select_all(self):
         for row in range(self.list.count()):
