@@ -289,7 +289,7 @@ def field_name(fm, field):
     if field == 'library_name':
         return _('Library name')
     if field.endswith('_index'):
-        return field_name(fm, field[:-len('_index')]) + ' ' + _('Number')
+        return field_name(fm, field[:-len('_index')]) + ' ' + _('Index')
     return fm[field].get('name') or field
 
 
