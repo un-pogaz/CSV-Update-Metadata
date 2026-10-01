@@ -207,15 +207,15 @@ class CSVMetadataAction(InterfaceAction):
                 if header.count(v) > 1:
                     raise ValueError('Their is a duplicate column header.')
         except Exception as err:
-            msg = [
+            msg = '<br>'.join([
                 _('The selected CSV fail to be loaded because is a malformed format.'),
                 _('To be sure to use a valid format, check the section "About the CSV Format".'),
-                f'<b>{err.__class__.__name__}:</b> {err}'
-            ]
+            ])
             error_dialog(
                 GUI,
                 _('Malformed CSV format'),
-                '<br>'.join(msg),
+                f'<p>{msg}\n'+
+                f'<p><b>{err.__class__.__name__}:</b> {err}',
                 show=True,
                 show_copy_button=False,
             )
@@ -605,16 +605,16 @@ class UpdateCSVdialog(Dialog):
                 for f,c in enumerate(data_map):
                     tbl.append(adapters[f](row[c]))
         except Exception as err:
-            msg = [
+            msg = '<br>'.join([
                 _('Invalid data for the field {} ({}).').format(field_name(fm, header[f]), header[f]),
                 _('Column: [{}] {}').format(c, self.csv_header[c]),
                 _('Line: {}').format(r),
-                f'<b>{err.__class__.__name__}:</b> {err}'
-            ]
+            ])
             error_dialog(
                 self,
                 _('Invalid data to update'),
-                '<br>'.join(msg),
+                f'<p>{msg}\n'+
+                f'<p><b>{err.__class__.__name__}:</b> {err}',
                 show=True,
                 show_copy_button=False,
             )
