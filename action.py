@@ -223,8 +223,7 @@ class CSVMetadataAction(InterfaceAction):
             for i,row in enumerate(data):
                 if len(row) < h:
                     row.extend('' for x in range(h-len(row)))
-                if len(row) > h:
-                    data[i] = row[:h]
+                data[i] = [e.strip() for e in row[:h]]
             
             UpdateCSVdialog(path, header, data, GUI).exec()
     
