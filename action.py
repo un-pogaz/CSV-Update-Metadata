@@ -601,7 +601,6 @@ class UpdateCSVdialog(Dialog):
             r, f, c = 0, 0, 0
             for r,row in enumerate(self.csv_data):
                 tbl = []
-                data.append(tbl)
                 for f,c in enumerate(data_map):
                     if row[c] == '':
                         tbl.append('')
@@ -609,6 +608,8 @@ class UpdateCSVdialog(Dialog):
                         tbl.append(None)
                     else:
                         tbl.append(adapters[f](row[c]))
+                if tbl[0] not in {'', None, 'NULL'}:
+                    data.append(tbl)
         except Exception as err:
             msg = '<br>'.join([
                 _('Invalid data for the field {} ({}).').format(field_name(fm, header[f]), header[f]),
