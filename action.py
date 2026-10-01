@@ -430,9 +430,10 @@ def item_style(item: QWidget, *, bold=False, italic=False):
 
 
 class ViewCSVdataDialog(Dialog):
-    def __init__(self, header: List[str], data: List[List[str]], parent=None):
+    def __init__(self, header: List[str], data: List[List[str]], has_reference=False, parent=None):
         self.header = header or []
         self.data = data or []
+        self.has_reference = has_reference or False
         Dialog.__init__(self,
             title=_('View CSV content data'),
             name='plugin.CSVMetadata:ViewCSVdataDialog',
@@ -462,6 +463,10 @@ class ViewCSVdataDialog(Dialog):
                 if data == 'NULL':
                     item_style(item, italic=True)
                 t.setItem(idr, idc, item)
+        if self.has_reference:
+            item_style(t.horizontalHeaderItem(0), italic=True)
+            for r in range(t.rowCount()):
+                item_style(t.item(r, 0), italic=True)
 
 
 class UpdateCSVdialog(Dialog):
@@ -668,4 +673,4 @@ class UpdateCSVdialog(Dialog):
                         sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
                         row[i] = sv.join([f'{k}:{v}' for k,v in row[i]])
         
-        ViewCSVdataDialog(header, data, parent=self).exec()
+        ViewCSVdataDialog(header, data, has_reference=True, parent=self).exec()
