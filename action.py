@@ -289,21 +289,25 @@ def get_writable_fields() -> Set[str]:
 
 
 def field_name(fm, field):
+    name = None
     if field == 'isbn':
-        return 'ISBN'
+        name = 'ISBN'
     if field == 'library_name':
-        return _('Library name')
+        name = _('Library name')
     if field.endswith('_index'):
-        return field_name(fm, field[:-len('_index')]) + ' ' + _('Index')
-    return fm[field].get('name') or field
+        field_serie = field[:-len('_index')]
+        name = fm.get(field_serie, {}).get('name')
+        if name:
+            name = name + ' ' + _('Index')
+    if not name:
+        name = fm[field].get('name') or field
+    return f'{name} ({field})'
 
 
 class ListColumnItem(QListWidgetItem):
     def __init__(self, field: str, name: str, parent=None):
         self.field = field
-        self.name = name
-        self.display_name = f'{name} ({field})'
-        super().__init__(self.display_name, parent)
+        super().__init__(name, parent)
 
 
 class ExportCSVdialog(Dialog):
@@ -504,14 +508,14 @@ class UpdateCSVdialog(Dialog):
         
         all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_header)}
         all_fields = dict(sorted(
-            ((n,f'{field_name(fm, n)} ({n})') for n in get_all_fields()),
+            ((n,field_name(fm, n)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         for n in ['library_name']:
             all_fields.pop(n, None)
         writable_fields = {'':''}
         writable_fields.update(sorted(
-            ((n,f'{field_name(fm, n)} ({n})') for n in get_writable_fields()),
+            ((n,field_name(fm, n)) for n in get_writable_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         
@@ -615,7 +619,7 @@ class UpdateCSVdialog(Dialog):
                     data.append(tbl)
         except Exception as err:
             msg = '<br>'.join([
-                _('Invalid data for the field {} ({}).').format(field_name(fm, header[f]), header[f]),
+                _('Invalid data for the field {}.').format(field_name(fm, header[f])),
                 _('Column: [{}] {}').format(c, self.csv_header[c]),
                 _('Line: {}').format(r),
             ])
@@ -642,8 +646,9 @@ class UpdateCSVdialog(Dialog):
         if not header:
             return
         
-        # convert
         fm = current_db().field_metadata
+        for i in range(len(header)):
+            header[i] = field_name(fm, header[i])
         for row in data:
             for i in range(len(row)):
                 if row[i] is None:
