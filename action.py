@@ -54,6 +54,7 @@ except ImportError:
     )
 
 from calibre.constants import ismacos
+from calibre.db.write import get_adapter
 from calibre.gui2 import FileDialog, choose_files, error_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
@@ -553,6 +554,74 @@ class UpdateCSVdialog(Dialog):
         button_layout.addStretch()
         button_layout.addWidget(self.button_update_data)
 
+    def get_data_update_map(self) -> Tuple[List[str], List[List[str]]]:
+        if not self.csv_header or not self.csv_data:
+            error_dialog(
+                self,
+                _('Source CSV is empty'),
+                _('The source CSV is empty.'),
+                show=True,
+                show_copy_button=False,
+            )
+            return [], []
+        
+        if self.reference_header.currentIndex() == -1:
+            error_dialog(
+                self,
+                _('No reference header selected'),
+                _('Select a reference header to seek the books to update.'),
+                show=True,
+                show_copy_button=False,
+            )
+            return [], []
+        if self.reference_field.currentIndex() == -1:
+            error_dialog(
+                self,
+                _('No reference field selected'),
+                _('Select a reference field to seek the books to update.'),
+                show=True,
+                show_copy_button=False,
+            )
+            return [], []
+        
+        header, data = [], []
+        data_map = []
+        
+        data_map.append(self.reference_header.currentIndex())
+        header.append(self.reference_field.selected_key())
+        
+        for i,w in self.csv_widget.items():
+            if k := w.selected_key():
+                header.append(k)
+                data_map.append(i)
+        
+        fm = current_db().field_metadata
+        adapters = [get_adapter(k, fm[k]) for k in header]
+        try:
+            r, f, c = 0, 0, 0
+            for r,row in enumerate(self.csv_data):
+                tbl = []
+                data.append(tbl)
+                for f,c in enumerate(data_map):
+                    tbl.append(adapters[f](row[c]))
+        except Exception as err:
+            msg = [
+                _('Invalid data for the field {} ({}).').format(field_name(fm, header[f]), header[f]),
+                _('Column: [{}] {}').format(c, self.csv_header[c]),
+                _('Line: {}').format(r),
+                f'<b>{err.__class__.__name__}:</b> {err}'
+            ]
+            error_dialog(
+                self,
+                _('Invalid data to update'),
+                '<br>'.join(msg),
+                show=True,
+                show_copy_button=False,
+            )
+            return [], []
+        
+        return header, data
+
     def accept(self):
         Dialog.accept(self)
 
@@ -560,4 +629,14 @@ class UpdateCSVdialog(Dialog):
         ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
 
     def preview_update_data(self):
-        pass
+        header, data = self.get_data_update_map()
+        if not header:
+            return
+        
+        # convert
+        fm = current_db().field_metadata
+        for row in data:
+            for i in range(len(row)):
+                row[i] = str(row[i])
+        
+        ViewCSVdataDialog(header, data, parent=self).exec()
