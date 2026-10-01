@@ -10,6 +10,7 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
+from datetime import datetime
 from typing import Dict, List, Set, Tuple
 
 try:
@@ -689,6 +690,11 @@ class UpdateCSVdialog(Dialog):
                         value = sv.join(value)
                 elif isinstance(value, (int, float, bool)):
                     value = str(value).lower()
+                elif isinstance(value, datetime):
+                    value = value.isoformat()
+                    value = value.replace('+00:00', '')
+                    value = value.replace('00:00:00', '')
+                    value = value.replace('T', ' ').strip()
                 elif isinstance(value, dict):
                     if not value:
                         value = 'NULL'
