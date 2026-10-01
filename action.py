@@ -218,14 +218,15 @@ class CSVMetadataAction(InterfaceAction):
                 show=True,
                 show_copy_button=False,
             )
-        else:
-            h = len(header)
-            for i,row in enumerate(data):
-                if len(row) < h:
-                    row.extend('' for x in range(h-len(row)))
-                data[i] = [e.strip() for e in row[:h]]
-            
-            UpdateCSVdialog(path, header, data, GUI).exec()
+            return
+        
+        h = len(header)
+        for i,row in enumerate(data):
+            if len(row) < h:
+                row.extend('' for x in range(h-len(row)))
+            data[i] = [e.strip() for e in row[:h]]
+        
+        UpdateCSVdialog(path, header, data, parent=GUI).exec()
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
