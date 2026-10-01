@@ -603,7 +603,12 @@ class UpdateCSVdialog(Dialog):
                 tbl = []
                 data.append(tbl)
                 for f,c in enumerate(data_map):
-                    tbl.append(adapters[f](row[c]))
+                    if row[c] == '':
+                        tbl.append('')
+                    elif row[c] == 'NULL':
+                        tbl.append(None)
+                    else:
+                        tbl.append(adapters[f](row[c]))
         except Exception as err:
             msg = '<br>'.join([
                 _('Invalid data for the field {} ({}).').format(field_name(fm, header[f]), header[f]),
