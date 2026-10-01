@@ -59,6 +59,7 @@ from calibre.db.write import get_adapter
 from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
+from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import sort_key
 
 from .common_utils import CALIBRE_VERSION, GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_icon
@@ -691,10 +692,13 @@ class UpdateCSVdialog(Dialog):
                 elif isinstance(value, (int, float, bool)):
                     value = str(value).lower()
                 elif isinstance(value, datetime):
-                    value = value.isoformat()
-                    value = value.replace('+00:00', '')
-                    value = value.replace('00:00:00', '')
-                    value = value.replace('T', ' ').strip()
+                    if is_date_undefined(value):
+                        value = 'NULL'
+                    else:
+                        value = value.isoformat()
+                        value = value.replace('+00:00', '')
+                        value = value.replace('00:00:00', '')
+                        value = value.replace('T', ' ').strip()
                 elif isinstance(value, dict):
                     if not value:
                         value = 'NULL'
