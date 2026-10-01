@@ -484,7 +484,10 @@ class UpdateCSVdialog(Dialog):
         view_layout = QHBoxLayout()
         l.addLayout(view_layout)
         view_layout.setAlignment(Qt.AlignCenter)
-        self.button_raw_data = QPushButton(get_icon(PLUGIN_ICON), ' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)))
+        self.button_raw_data = QPushButton(
+            get_icon(PLUGIN_ICON),
+            ' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)),
+        )
         self.button_raw_data.setToolTip(_('View the raw content of the loaded CSV file.'))
         self.button_raw_data.setMinimumWidth(200)
         item_style(self.button_raw_data, bold=True)
