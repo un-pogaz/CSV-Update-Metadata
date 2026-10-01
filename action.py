@@ -581,6 +581,12 @@ class UpdateCSVdialog(Dialog):
         button_layout.addStretch()
         button_layout.addWidget(self.button_update_data)
 
+    def view_raw_data(self):
+        ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
+
+    def preview_data(self):
+        self.preview_update_data(validate=False)
+
     def get_data_update_map(self) -> Tuple[List[str], List[List[str]]]:
         if not self.csv_header or not self.csv_data:
             error_dialog(
@@ -661,9 +667,6 @@ class UpdateCSVdialog(Dialog):
             return
         Dialog.accept(self)
 
-    def view_raw_data(self):
-        ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
-
     def preview_update_data(self, validate=False) -> Tuple[List[str], List[List[str]]]:
         header, data = self.get_data_update_map()
         if not header:
@@ -698,6 +701,3 @@ class UpdateCSVdialog(Dialog):
         if rslt != Dialog.DialogCode.Accepted:
             return [], []
         return header, data
-    
-    def preview_data(self):
-        self.preview_update_data(validate=False)
