@@ -557,7 +557,7 @@ class UpdateCSVdialog(Dialog):
         Dialog.accept(self)
 
     def view_raw_data(self):
-        ViewCSVdataDialog(self.csv_header, self.csv_data, self).exec()
+        ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
 
     def preview_update_data(self):
         pass
