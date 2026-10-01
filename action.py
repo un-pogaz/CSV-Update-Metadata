@@ -642,6 +642,21 @@ class UpdateCSVdialog(Dialog):
         fm = current_db().field_metadata
         for row in data:
             for i in range(len(row)):
-                row[i] = str(row[i])
+                if row[i] is None:
+                    row[i] = 'NULL'
+                elif isinstance(row[i], (list, tuple)):
+                    if not row[i]:
+                        row[i] = 'NULL'
+                    else:
+                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                        row[i] = sv.join(row[i])
+                elif isinstance(row[i], (int, float, bool)):
+                    row[i] = str(row[i]).lower()
+                elif isinstance(row[i], dict):
+                    if not row[i]:
+                        row[i] = 'NULL'
+                    else:
+                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                        row[i] = sv.join([f'{k}:{v}' for k,v in row[i]])
         
         ViewCSVdataDialog(header, data, parent=self).exec()
