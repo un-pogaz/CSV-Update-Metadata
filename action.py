@@ -55,7 +55,7 @@ except ImportError:
 
 from calibre.constants import ismacos
 from calibre.db.write import get_adapter
-from calibre.gui2 import FileDialog, choose_files, error_dialog
+from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
 from calibre.utils.icu import sort_key
@@ -430,10 +430,11 @@ def item_style(item: QWidget, *, bold=False, italic=False):
 
 
 class ViewCSVdataDialog(Dialog):
-    def __init__(self, header: List[str], data: List[List[str]], has_reference=False, parent=None):
+    def __init__(self, header: List[str], data: List[List[str]], has_reference=False, validate=False, parent=None):
         self.header = header or []
         self.data = data or []
         self.has_reference = has_reference or False
+        self.validate = validate or False
         Dialog.__init__(self,
             title=_('View CSV content data'),
             name='plugin.CSVMetadata:ViewCSVdataDialog',
@@ -467,6 +468,20 @@ class ViewCSVdataDialog(Dialog):
             item_style(t.horizontalHeaderItem(0), italic=True)
             for r in range(t.rowCount()):
                 item_style(t.item(r, 0), italic=True)
+        
+        if self.validate:
+            l.addWidget(self.bb)
+    
+    def accept(self):
+        rslt = question_dialog(
+            self,
+            _('Are you sure?'),
+            _('Are you sure you want to update the library with this values? There is no undo.'),
+        )
+        if rslt:
+            Dialog.accept(self)
+        else:
+            Dialog.reject(self)
 
 
 class UpdateCSVdialog(Dialog):
@@ -558,7 +573,7 @@ class UpdateCSVdialog(Dialog):
         l.addLayout(button_layout)
         
         self.button_preview_data = QPushButton(get_icon('search.png'), _('Preview update'))
-        self.button_preview_data.clicked.connect(self.preview_update_data)
+        self.button_preview_data.clicked.connect(self.preview_data)
         self.button_update_data = QPushButton(get_icon('ok.png'), _('Update the metadata'))
         self.button_update_data.clicked.connect(self.accept)
         
@@ -641,36 +656,48 @@ class UpdateCSVdialog(Dialog):
         return header, data
 
     def accept(self):
+        header, data = self.preview_update_data(validate=True)
+        if not header:
+            return
         Dialog.accept(self)
 
     def view_raw_data(self):
         ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
 
-    def preview_update_data(self):
+    def preview_update_data(self, validate=False) -> Tuple[List[str], List[List[str]]]:
         header, data = self.get_data_update_map()
         if not header:
-            return
+            return [], []
         
         fm = current_db().field_metadata
-        for i in range(len(header)):
-            header[i] = field_name(fm, header[i])
+        pre_header = [field_name(fm, h) for h in header]
+        pre_data = []
         for row in data:
-            for i in range(len(row)):
-                if row[i] is None:
-                    row[i] = 'NULL'
-                elif isinstance(row[i], (list, tuple)):
-                    if not row[i]:
-                        row[i] = 'NULL'
+            tbl = []
+            pre_data.append(tbl)
+            for value in row:
+                if value is None:
+                    value = 'NULL'
+                elif isinstance(value, (list, tuple)):
+                    if not value:
+                        value = 'NULL'
                     else:
                         sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                        row[i] = sv.join(row[i])
-                elif isinstance(row[i], (int, float, bool)):
-                    row[i] = str(row[i]).lower()
-                elif isinstance(row[i], dict):
-                    if not row[i]:
-                        row[i] = 'NULL'
+                        value = sv.join(value)
+                elif isinstance(value, (int, float, bool)):
+                    value = str(value).lower()
+                elif isinstance(value, dict):
+                    if not value:
+                        value = 'NULL'
                     else:
                         sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                        row[i] = sv.join([f'{k}:{v}' for k,v in row[i]])
+                        value = sv.join([f'{k}:{v}' for k,v in value])
+                tbl.append(value)
         
-        ViewCSVdataDialog(header, data, has_reference=True, parent=self).exec()
+        rslt = ViewCSVdataDialog(pre_header, pre_data, has_reference=True, validate=validate, parent=self).exec()
+        if rslt != Dialog.DialogCode.Accepted:
+            return [], []
+        return header, data
+    
+    def preview_data(self):
+        self.preview_update_data(validate=False)
