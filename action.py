@@ -306,12 +306,6 @@ def field_name(fm, field):
     return f'{name} ({field})'
 
 
-class ListColumnItem(QListWidgetItem):
-    def __init__(self, field: str, name: str, parent=None):
-        self.field = field
-        super().__init__(name, parent)
-
-
 class ExportCSVdialog(Dialog):
     def __init__(self, ids: List[int]=[], parent=None):
         self.ids = ids or []
@@ -363,7 +357,8 @@ class ExportCSVdialog(Dialog):
 
         self.list.clear()
         for idx, name, field in sorted(map(key_buider, get_all_fields())):
-            item = ListColumnItem(field, name, self.list)
+            item = QListWidgetItem(name, self.list)
+            item.setData(Qt.ItemDataRole.UserRole, field)
             item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
 
     def select_all(self):
@@ -379,16 +374,18 @@ class ExportCSVdialog(Dialog):
         hidden = set(state['hidden_columns'])
         for row in range(self.list.count()):
             item = self.list.item(row)
-            item.setCheckState(Qt.CheckState.Unchecked if item.field in hidden else Qt.CheckState.Checked)
+            field = item.data(Qt.ItemDataRole.UserRole)
+            item.setCheckState(Qt.CheckState.Unchecked if field in hidden else Qt.CheckState.Checked)
 
     def accept(self):
         sort_order = {}
         fields = {}
         for row in range(self.list.count()):
             item = self.list.item(row)
-            sort_order[item.field] = row
+            field = item.data(Qt.ItemDataRole.UserRole)
+            sort_order[field] = row
             if item.checkState() == Qt.CheckState.Checked:
-                fields[item.field] = item.display_name
+                fields[field] = item.text()
         if not fields:
             return no_launch_error(_('No field selected'))
         
