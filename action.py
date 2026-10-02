@@ -616,6 +616,7 @@ class UpdateCSVdialog(Dialog):
             )
             return [], []
         
+        fm = current_db().field_metadata
         header, data = [], []
         data_map = []
         
@@ -624,10 +625,21 @@ class UpdateCSVdialog(Dialog):
         
         for i,w in self.csv_widget.items():
             if k := w.selected_key():
+                if k in header[1:]:
+                    error_dialog(
+                        self,
+                        _('Duplicate updated field'),
+                        _(
+                            'The field {} is reference twice as destination for the updating, '
+                            'and therefore cannot be reliably updated.'
+                        ).format(field_name(fm, k)),
+                        show=True,
+                        show_copy_button=False,
+                    )
+                    return [], []
                 header.append(k)
                 data_map.append(i)
         
-        fm = current_db().field_metadata
         adapters = [get_adapter(k, fm[k]) for k in header]
         try:
             r, f, c = 0, 0, 0
