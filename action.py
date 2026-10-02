@@ -444,7 +444,7 @@ class ViewCSVdataDialog(Dialog):
         l = QVBoxLayout(self)
         self.setLayout(l)
         
-        self.table = t = QTableWidget()
+        t = QTableWidget(self)
         t.setAlternatingRowColors(True)
         t.setSelectionMode(QTableWidget.ExtendedSelection)
         t.setSortingEnabled(False)
