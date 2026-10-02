@@ -10,12 +10,14 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
+from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Set, Tuple
 
 try:
     from qt.core import (
         QAbstractItemView,
+        QDialog,
         QFileDialog,
         QFormLayout,
         QFrame,
@@ -29,6 +31,7 @@ try:
         Qt,
         QTableWidget,
         QTableWidgetItem,
+        QTextBrowser,
         QToolButton,
         QVBoxLayout,
         QWidget,
@@ -36,6 +39,7 @@ try:
 except ImportError:
     from PyQt5.Qt import (
         QAbstractItemView,
+        QDialog,
         QFileDialog,
         QFormLayout,
         QFrame,
@@ -49,6 +53,7 @@ except ImportError:
         Qt,
         QTableWidget,
         QTableWidgetItem,
+        QTextBrowser,
         QToolButton,
         QVBoxLayout,
         QWidget,
@@ -428,10 +433,58 @@ def item_style(item: QWidget, *, bold=False, italic=False):
     item.setFont(font)
 
 
+class CSVdataError:
+    def __init__(self, column: int, line: int, header: str, field: str, exc: Exception):
+        self.column = column
+        self.line = line
+        self.header = header
+        self.field = field
+        self.exc = exc
+    
+    @property
+    def exc_text(self):
+        return f'{self.exc.__class__.__name__}: {self.exc}'
+
+
+class DataErrorViewer(QDialog):
+    def __init__(self, errors: List[CSVdataError] = [], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(_('Invalid data to update'))
+        self.setMinimumSize(600, 500)
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        t = QTextBrowser(self)
+        l.addWidget(t)
+        
+        rslt = defaultdict(list)
+        for e in errors:
+            k = (e.column, e.header, e.field)
+            rslt[k].append((e.line, e.exc_text))
+        
+        msg = []
+        for k in sorted(rslt.keys()):
+            column, header, field = k
+            msg.append(f'column: [{column}] {header}')
+            msg.append(f'field: {field}')
+            for (line, txt) in sorted(rslt[k]):
+                msg.append(f'line: {line} :: {txt}')
+            msg.append('\n')
+        t.setPlainText('\n'.join(msg).strip())
+
+
 class ViewCSVdataDialog(Dialog):
-    def __init__(self, header: List[str], data: List[List[str]], has_reference=False, validate=False, parent=None):
+    def __init__(
+        self,
+        header: List[str],
+        data: List[List[str]],
+        errors: List[CSVdataError] = None,
+        has_reference=False,
+        validate=False,
+        parent=None,
+    ):
         self.header = header or []
         self.data = data or []
+        self.errors = errors or []
         self.has_reference = has_reference or False
         self.validate = validate or False
         Dialog.__init__(self,
@@ -458,8 +511,21 @@ class ViewCSVdataDialog(Dialog):
         t.setRowCount(len(self.data))
         for idr,row in enumerate(self.data):
             for idc,data in enumerate(row):
-                item = QTableWidgetItem(data)
+                item = QTableWidgetItem()
                 item.setFlags(Qt.ItemIsEnabled)
+                if isinstance(data, CSVdataError):
+                    item.setText('ERROR')
+                    msg = [
+                        f'column: [{data.column}] {data.header}',
+                        f'field: {data.field}',
+                        f'line: {data.line}',
+                        data.exc_text,
+                    ]
+                    item.setToolTip('\n'.join(msg))
+                    item.setIcon(get_icon('dialog_error.png'))
+                    item_style(item, italic=True)
+                else:
+                    item.setText(data)
                 if data == 'NULL':
                     item_style(item, italic=True)
                 t.setItem(idr, idc, item)
@@ -468,8 +534,19 @@ class ViewCSVdataDialog(Dialog):
             for r in range(t.rowCount()):
                 item_style(t.item(r, 0), italic=True)
         
-        if self.validate:
+        if self.errors:
+            btn = QPushButton(get_icon('dialog_error.png'), _('View errors'))
+            btn.setMinimumWidth(100)
+            btn.clicked.connect(self.show_data_error_viewer)
+            h = QHBoxLayout()
+            h.addWidget(btn)
+            h.addStretch()
+            l.addLayout(h)
+        elif self.validate:
             l.addWidget(self.bb)
+    
+    def show_data_error_viewer(self):
+        DataErrorViewer(self.errors ,self).exec()
     
     def accept(self):
         rslt = question_dialog(
@@ -586,7 +663,7 @@ class UpdateCSVdialog(Dialog):
     def preview_data(self):
         self.preview_update_data(validate=False)
 
-    def get_data_update_map(self) -> Tuple[List[str], List[List[str]]]:
+    def get_data_update_map(self) -> Tuple[List[str], List[List[str]], List[CSVdataError]]:
         if not self.csv_header or not self.csv_data:
             error_dialog(
                 self,
@@ -595,7 +672,7 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], []
+            return [], [], []
         
         if self.reference_header.currentIndex() == -1:
             error_dialog(
@@ -605,7 +682,7 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], []
+            return [], [], []
         if self.reference_field.currentIndex() == -1:
             error_dialog(
                 self,
@@ -614,10 +691,11 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], []
+            return [], [], []
         
         fm = current_db().field_metadata
         header, data = [], []
+        errors = []
         data_map = []
         
         data_map.append(self.reference_header.currentIndex())
@@ -636,41 +714,34 @@ class UpdateCSVdialog(Dialog):
                         show=True,
                         show_copy_button=False,
                     )
-                    return [], []
+                    return [], [], []
                 header.append(k)
                 data_map.append(i)
         
         adapters = [get_adapter(k, fm[k]) for k in header]
-        try:
-            r, f, c = 0, 0, 0
-            for r,row in enumerate(self.csv_data):
-                tbl = []
-                for f,c in enumerate(data_map):
-                    if row[c] == '':
-                        tbl.append('')
-                    elif row[c] == 'NULL':
-                        tbl.append(None)
-                    else:
+        r, f, c = 0, 0, 0
+        for r,row in enumerate(self.csv_data):
+            tbl = []
+            for f,c in enumerate(data_map):
+                if row[c] == '':
+                    tbl.append('')
+                elif row[c] == 'NULL':
+                    tbl.append(None)
+                else:
+                    try:
                         tbl.append(adapters[f](row[c]))
-                if tbl[0] not in {'', None, 'NULL'}:
-                    data.append(tbl)
-        except Exception as err:
-            msg = '<br>'.join([
-                _('Invalid data for the field {}.').format(field_name(fm, header[f])),
-                _('Column: [{}] {}').format(c, self.csv_header[c]),
-                _('Line: {}').format(r),
-            ])
-            error_dialog(
-                self,
-                _('Invalid data to update'),
-                f'<p>{msg}\n'+
-                f'<p><b>{err.__class__.__name__}:</b> {err}',
-                show=True,
-                show_copy_button=False,
-            )
-            return [], []
+                    except Exception as err:
+                        tbl.append(CSVdataError(
+                            c, r,
+                            self.csv_header[c],
+                            field_name(fm, header[f]),
+                            err,
+                        ))
+            if tbl[0] not in {'', None, 'NULL'}:
+                data.append(tbl)
+                errors.extend(e for e in tbl if isinstance(e, CSVdataError))
         
-        return header, data
+        return header, data, errors
 
     def accept(self):
         header, data = self.preview_update_data(validate=True)
@@ -679,8 +750,20 @@ class UpdateCSVdialog(Dialog):
         Dialog.accept(self)
 
     def preview_update_data(self, validate=False) -> Tuple[List[str], List[List[str]]]:
-        header, data = self.get_data_update_map()
+        header, data, errors = self.get_data_update_map()
         if not header:
+            return [], []
+        if validate and errors:
+            error_dialog(
+                self,
+                _('Invalid data to update'),
+                _('The table of updated values contain {} errors. Use "{}" to see the details of them.').format(
+                    len(errors),
+                    self.button_preview_data.text(),
+                ),
+                show=True,
+                show_copy_button=False,
+            )
             return [], []
         
         fm = current_db().field_metadata
@@ -716,7 +799,7 @@ class UpdateCSVdialog(Dialog):
                         value = sv.join([f'{k}:{v}' for k,v in value])
                 tbl.append(value)
         
-        rslt = ViewCSVdataDialog(pre_header, pre_data, has_reference=True, validate=validate, parent=self).exec()
+        rslt = ViewCSVdataDialog(pre_header, pre_data, errors=errors, has_reference=True, validate=validate, parent=self).exec()
         if rslt != Dialog.DialogCode.Accepted:
             return [], []
         return header, data
