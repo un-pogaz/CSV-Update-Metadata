@@ -428,7 +428,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             writer.writerow(row)
 
 
-def item_style(item: QWidget, *, bold=False, italic=False):
+def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
     font = item.font()
     font.setBold(bold)
     font.setItalic(italic)
@@ -480,8 +480,8 @@ class ViewCSVdataDialog(Dialog):
         header: List[str],
         data: List[List[str]],
         errors: List[CSVdataError] = None,
-        has_reference=False,
-        validate=False,
+        has_reference: bool=False,
+        validate: bool=False,
         parent=None,
     ):
         self.header = header or []
@@ -751,7 +751,7 @@ class UpdateCSVdialog(Dialog):
             return
         Dialog.accept(self)
 
-    def preview_update_data(self, validate=False) -> Tuple[List[str], List[List[str]]]:
+    def preview_update_data(self, validate: bool=False) -> Tuple[List[str], List[List[str]]]:
         header, data, errors = self.get_data_update_map()
         if not header:
             return [], []
