@@ -144,6 +144,8 @@ class CSVformatDialog(Dialog):
             _('Empty value will be skipped (no edit action).'),
             _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
         ))
+        append('p', _('Important. Line return inside of a quoted value are <i>completely ignored</i>. '
+                      "To insert a line return into the value, you need to use the escape code '<code>\\n</code>'."))
         rslt.append('<hr>')
         append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
@@ -364,12 +366,15 @@ def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tu
             if not header[i]:
                 raise ValueError(_('One column header is empty, index {}.').format(i+1))
     
+    def strip(val):
+        return val.replace('\\n', '\n').strip().replace('\n', '\\n')
+    
     if sanitize:
         h = len(header)
         for i,row in enumerate(data):
             if len(row) < h:
                 row.extend('' for x in range(h-len(row)))
-            data[i] = [e.strip() for e in row[:h]]
+            data[i] = [strip(e) for e in row[:h]]
     
     return header, data
 
@@ -383,7 +388,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             row = []
             mi = db.get_metadata(id)
             for field in fields.keys():
-                row.append(mi.format_field(field, False)[1])
+                row.append(mi.format_field(field, series_with_index=False)[1].replace('\n', '\\n'))
             writer.writerow(row)
 
 
@@ -834,7 +839,7 @@ class UpdateCSVdialog(Dialog):
                     tbl.append(None)
                 else:
                     try:
-                        tbl.append(adapters[f](row[c]))
+                        tbl.append(adapters[f](row[c].replace('\\n', '\n')))
                     except Exception as err:
                         tbl.append(CSVdataError(
                             c, r,
@@ -901,6 +906,8 @@ class UpdateCSVdialog(Dialog):
                     else:
                         sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
                         value = sv.join([f'{k}:{v}' for k,v in value])
+                if isinstance(value, str):
+                    value = value.strip().replace('\n', '\\n')
                 tbl.append(value)
         
         rslt = ViewCSVdataDialog(pre_header, pre_data, errors=errors, has_reference=True, validate=validate, parent=self).exec()
