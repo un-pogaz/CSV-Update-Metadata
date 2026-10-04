@@ -228,12 +228,6 @@ class CSVMetadataAction(InterfaceAction):
             )
             return
         
-        h = len(header)
-        for i,row in enumerate(data):
-            if len(row) < h:
-                row.extend('' for x in range(h-len(row)))
-            data[i] = [e.strip() for e in row[:h]]
-        
         UpdateCSVdialog(path, header, data, parent=GUI).exec()
     
     def export_metadata(self):
@@ -404,12 +398,20 @@ class ExportCSVdialog(Dialog):
         Dialog.accept(self)
 
 
-def load_csv_file(csv_path: str) -> Tuple[List[str], List[List[str]]]:
+def load_csv_file(csv_path: str, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
     with open(csv_path, encoding='utf-8') as f:
         raw = f.read().splitlines(False)
     raw = list(csv.reader(raw, CSV))
     header = raw[0]
     data = raw[1:]
+    
+    if sanitize:
+        h = len(header)
+        for i,row in enumerate(data):
+            if len(row) < h:
+                row.extend('' for x in range(h-len(row)))
+            data[i] = [e.strip() for e in row[:h]]
+    
     return header, data
 
 
