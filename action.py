@@ -892,10 +892,9 @@ class UpdateCSVdialog(Dialog):
                     if is_date_undefined(value):
                         value = 'NULL'
                     else:
-                        value = value.isoformat()
+                        value = value.isoformat(' ')
                         value = value.replace('+00:00', '')
                         value = value.replace('00:00:00', '')
-                        value = value.replace('T', ' ').strip()
                 elif isinstance(value, dict):
                     if not value:
                         value = 'NULL'
