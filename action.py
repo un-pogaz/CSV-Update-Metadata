@@ -10,12 +10,14 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 import csv
+import re
 from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Set, Tuple
 
 try:
     from qt.core import (
+        QCheckBox,
         QDialog,
         QFileDialog,
         QFormLayout,
@@ -39,6 +41,7 @@ try:
     )
 except ImportError:
     from PyQt5.Qt import (
+        QCheckBox,
         QDialog,
         QFileDialog,
         QFormLayout,
@@ -82,6 +85,7 @@ PREFS = PREFS_json()
 LIBRARY_PREFS = PREFS_library()
 LIBRARY_PREFS.defaults['sort_order'] = {'id':0, 'authors':1, 'series':2, 'series_index':3, 'title':4}
 LIBRARY_PREFS.defaults['fields'] = ['id', 'authors', 'series', 'series_index', 'title']
+LIBRARY_PREFS.defaults['series_with_index'] = False
 
 
 class CSV(csv.Dialect):
@@ -224,7 +228,7 @@ class CSVMetadataAction(InterfaceAction):
         d = UpdateCSVdialog(path, header, data, parent=GUI)
         rslt = d.exec()
         if rslt == Dialog.DialogCode.Accepted and d.header:
-            UpdateDataProgress(d.header, d.data)
+            UpdateDataProgress(d.header, d.data, d.series_with_index)
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
@@ -234,9 +238,10 @@ class CSVMetadataAction(InterfaceAction):
 
 
 class UpdateDataProgress(QProgressDialog):
-    def __init__(self, header, data):
+    def __init__(self, header, data, series_with_index):
         self.header = header
         self.data = data
+        self.series_with_index = series_with_index
         
         QProgressDialog.__init__(self, '', None, 0, 0, GUI)
         self.setMinimumWidth(500)
@@ -251,7 +256,7 @@ class UpdateDataProgress(QProgressDialog):
         self.exec()
 
     def run_job(self):
-        update_library_data(self.header, self.data)
+        update_library_data(self.header, self.data, self.series_with_index)
         self.close()
 
 
@@ -337,11 +342,33 @@ def _check_isbn(x):
     return rslt
 
 
-def get_adapter(name, metadata):
+def _split_series_with_index(x):
+    from calibre.db.write import adapt_series_index, single_text
+    
+    x = single_text(x)
+    if not x:
+        return None
+    
+    m = re.fullmatch(r'(.+)\s+\[(\d+(\.\d+))\]', x)
+    if not m:
+        raise ValueError(f'invalid value for series with index: {x!r}')
+    return m.group(1), adapt_series_index(m.group(2))
+
+
+def _series_with_index(x):
+    x = _split_series_with_index(x)
+    if not x:
+        return None
+    return f'{x[0]} [{x[1]}]'
+
+
+def get_adapter(name, metadata, *, series_with_index=False):
     import copy  # noqa
     from calibre.db.write import get_adapter
     if name == 'isbn':
         return _check_isbn
+    if metadata['datatype'] == 'series' and series_with_index:
+        return _series_with_index
     if metadata['datatype'] == 'composite':
         metadata = copy.deepcopy(metadata)
         metadata['datatype'] = 'text'
@@ -385,7 +412,7 @@ def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tu
     return header, data
 
 
-def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> None:
+def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, series_with_index: bool=False) -> None:
     db = current_db().new_api
     with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
         writer = csv.writer(f, CSV)
@@ -394,12 +421,12 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             row = []
             mi = db.get_metadata(id)
             for field in fields.keys():
-                value = mi.format_field(field, series_with_index=False)[1] or ''
+                value = mi.format_field(field, series_with_index=series_with_index)[1] or ''
                 row.append(value.replace('\n', '\\n'))
             writer.writerow(row)
 
 
-def update_library_data(header, data):
+def update_library_data(header: List, data: List[List], *, series_with_index: bool=False):
     if len(header) < 2 or not data:
         return
     
@@ -435,10 +462,13 @@ class ExportCSVdialog(Dialog):
         self.list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         
         l.addWidget(self.list)
+        l.addWidget(QLabel(_('Drag and drop to re-arrange fields'), self))
         
         h = QHBoxLayout()
         l.addLayout(h)
-        h.addWidget(QLabel(_('Drag and drop to re-arrange fields'), self))
+        self.series_with_index = QCheckBox(_('Add the index to the series-type fields'), self)
+        self.series_with_index.setChecked(LIBRARY_PREFS['series_with_index'])
+        h.addWidget(self.series_with_index)
         h.addStretch()
         self.select_all_button = QPushButton(_('Select &all'))
         self.select_all_button.clicked.connect(self.select_all)
@@ -503,7 +533,8 @@ class ExportCSVdialog(Dialog):
         
         LIBRARY_PREFS['sort_order'] = sort_order
         LIBRARY_PREFS['fields'] = list(fields.keys())
-        export_csv_file(file, fields, self.ids)
+        LIBRARY_PREFS['series_with_index'] = swi = self.series_with_index.isChecked()
+        export_csv_file(file, fields, self.ids, series_with_index=swi)
         Dialog.accept(self)
 
 
@@ -642,6 +673,7 @@ class UpdateCSVdialog(Dialog):
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
         self.header = []
         self.data = []
+        self.series_with_index = False
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -702,6 +734,9 @@ class UpdateCSVdialog(Dialog):
         reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
         reference_selector.addRow(_('Book field to match:'), self.reference_field)
         layout.addLayout(reference_selector)
+        
+        self.series_include_index = QCheckBox(_('Series-type fields include index'), self)
+        layout.addWidget(self.series_include_index)
         
         self.frame = QFrame()
         self.frame.setFrameShape(QFrame.HLine)
@@ -837,7 +872,8 @@ class UpdateCSVdialog(Dialog):
                 header.append(k)
                 data_map.append(i)
         
-        adapters = [get_adapter(k, fm[k]) for k in header]
+        swi = self.series_include_index.isChecked()
+        adapters = [get_adapter(k, fm[k], series_with_index=swi) for k in header]
         r, f, c = 0, 0, 0
         for r,row in enumerate(self.csv_data):
             tbl = []
@@ -863,6 +899,7 @@ class UpdateCSVdialog(Dialog):
         return header, data, errors
 
     def accept(self):
+        self.series_with_index = self.series_include_index.isChecked()
         self.header, self.data = self.preview_update_data(validate=True)
         if not self.header:
             return
