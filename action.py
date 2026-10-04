@@ -62,7 +62,6 @@ except ImportError:
     )
 
 from calibre.constants import ismacos
-from calibre.db.write import get_adapter
 from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, HTMLDisplay
@@ -319,6 +318,21 @@ def field_name(fm, field):
     if not name:
         name = fm[field].get('name') or field
     return f'{name} ({field})'
+
+
+def _check_isbn(x):
+    from calibre.ebooks.metadata import check_isbn
+    rslt = check_isbn(x)
+    if not rslt:
+        raise ValueError(f'invalid value for isbn: {rslt}')
+    return rslt
+
+
+def get_adapter(name, metadata):
+    from calibre.db.write import get_adapter
+    if name == 'isbn':
+        return _check_isbn
+    return get_adapter(name, metadata)
 
 
 def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tuple[List[str], List[List[str]]]:
@@ -650,7 +664,7 @@ class UpdateCSVdialog(Dialog):
             ((n,field_name(fm, n)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
         ))
-        for n in ['library_name']:
+        for n in ('library_name'):
             all_fields.pop(n, None)
         writable_fields = {'':''}
         writable_fields.update(sorted(
