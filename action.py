@@ -125,6 +125,8 @@ class CSVformatDialog(Dialog):
                       'A CSV file stores tabular data in plain text. Each line of the file is a data record. '
                       'Each record consists of one or more values, separated by commas. '
                       'The use of the comma as a value separator is the source of the name for this file format.'))
+        append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, '
+                      'but this plugin can tolerate some of such difference as input.'))
         append('p', _('The CSV format supported by the plugin is the following:'))
         rslt.append(list_builder(
             _('The entire file must be "saved" in the Unicode (UTF-8) character set.'),
