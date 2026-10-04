@@ -324,7 +324,13 @@ def field_name(fm, field):
 
 
 def _check_isbn(x):
+    from calibre.db.write import single_text
     from calibre.ebooks.metadata import check_isbn
+    
+    x = single_text(x)
+    if not x:
+        return None
+    
     rslt = check_isbn(x)
     if not rslt:
         raise ValueError(f'invalid value for isbn: {rslt}')
