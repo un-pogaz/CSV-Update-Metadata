@@ -204,17 +204,6 @@ class CSVMetadataAction(InterfaceAction):
             return
         try:
             header, data = load_csv_file(path)
-            if not data:
-                raise ValueError(_('The input CSV need at least 2 rows (one for the header and the others for the data).'))
-            if len(header) < 2:
-                raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
-            for i in range(len(header)):
-                header[i] = header[i].strip()
-                if not header[i]:
-                    raise ValueError(_('One column header is empty, index {}.').format(i+1))
-            for v in header:
-                if header.count(v) > 1:
-                    raise ValueError(_('Their is a duplicate column header.'))
         except Exception as err:
             msg = '<br>'.join([
                 _('The selected CSV fail to be loaded because is a malformed format.'),
@@ -425,12 +414,29 @@ class ExportCSVdialog(Dialog):
         Dialog.accept(self)
 
 
-def load_csv_file(csv_path: str, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
+def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tuple[List[str], List[List[str]]]:
+    '''
+    Load a CSV file from the given path.
+    
+    sanitize: ensure that the content is "rectangle table" (every row as the header length)
+    validate: perform additional check of the content (2 columns, 2 rows, no empty header)
+    '''
+    
     with open(csv_path, encoding='utf-8') as f:
         raw = f.read().splitlines(False)
     raw = list(csv.reader(raw, CSV))
     header = raw[0]
     data = raw[1:]
+    
+    if validate:
+        if not data:
+            raise ValueError(_('The input CSV need at least 2 rows (one for the header and the others for the data).'))
+        if len(header) < 2:
+            raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
+        for i in range(len(header)):
+            header[i] = header[i].strip()
+            if not header[i]:
+                raise ValueError(_('One column header is empty, index {}.').format(i+1))
     
     if sanitize:
         h = len(header)
