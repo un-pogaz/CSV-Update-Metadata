@@ -645,42 +645,42 @@ class UpdateCSVdialog(Dialog):
         
         view_layout = QHBoxLayout()
         l.addLayout(view_layout)
-        self.button_raw_data = QPushButton(
-            get_icon(PLUGIN_ICON),
-            ' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)),
-        )
+        
+        self.button_raw_data = QPushButton(get_icon(PLUGIN_ICON), '')
         self.button_raw_data.setToolTip(_('View the raw content of the loaded CSV file.'))
         self.button_raw_data.setMinimumWidth(200)
-        item_style(self.button_raw_data, bold=True)
         self.button_raw_data.clicked.connect(self.view_raw_data)
+        item_style(self.button_raw_data, bold=True)
+        
+        self.button_reload_data = QPushButton(get_icon('view-refresh.png'), '')
+        self.button_reload_data.clicked.connect(self.reload_data)
+        
         view_layout.addStretch()
         view_layout.addWidget(self.button_raw_data)
+        view_layout.addWidget(self.button_reload_data)
         view_layout.addStretch()
         
         fm = current_db().field_metadata
-        scroll = QScrollArea(self)
-        l.addWidget(scroll)
-        layout = QVBoxLayout(scroll)
-        scroll.setLayout(layout)
+        self.scroll = QScrollArea(self)
+        l.addWidget(self.scroll)
+        layout = QVBoxLayout(self.scroll)
+        self.scroll.setLayout(layout)
         
-        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_header)}
         all_fields = dict(sorted(
             ((n,field_name(fm, n)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         for n in ('library_name'):
             all_fields.pop(n, None)
-        writable_fields = {'':''}
-        writable_fields.update(sorted(
+        self.writable_fields = {'':''}
+        self.writable_fields.update(sorted(
             ((n,field_name(fm, n)) for n in get_writable_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         
-        self.reference_header = NoWheelComboBox(scroll)
-        self.reference_header.addItems(all_headers.values())
-        self.reference_header.setCurrentIndex(-1)
+        self.reference_header = NoWheelComboBox(self.scroll)
         
-        self.reference_field = KeyValueComboBox(all_fields, parent=scroll)
+        self.reference_field = KeyValueComboBox(all_fields, parent=self.scroll)
         self.reference_field.setCurrentIndex(-1)
         
         reference_selector = QFormLayout()
@@ -697,15 +697,6 @@ class UpdateCSVdialog(Dialog):
         layout.addLayout(self.data_selector)
         layout.addStretch()
         
-        for idx, header in all_headers.items():
-            field_out = KeyValueComboBox(writable_fields, parent=scroll)
-            field_out.setCurrentIndex(-1)
-            h = QHBoxLayout()
-            h.addWidget(QLabel('⟹'))
-            h.addWidget(field_out)
-            self.data_selector.addRow(header, h)
-            self.csv_widget[idx] = field_out
-        
         button_layout = QHBoxLayout()
         l.addLayout(button_layout)
         
@@ -717,6 +708,58 @@ class UpdateCSVdialog(Dialog):
         button_layout.addWidget(self.button_preview_data)
         button_layout.addStretch()
         button_layout.addWidget(self.button_update_data)
+        
+        self.populate()
+
+    def reload_data(self):
+        if not question_dialog(
+            self,
+            _('Are you sure?'),
+            _('Are you sure you want to reload the CSV file?'),
+        ):
+            return
+        try:
+            header, data = load_csv_file(self.csv_path)
+        except Exception as err:
+            msg = '<br>'.join([
+                _('The reload of the CSV file fail is a malformed format.'),
+                _('To be sure to use a valid format, check the section "About the CSV Format".'),
+            ])
+            error_dialog(
+                GUI,
+                _('Malformed CSV format'),
+                f'<p>{msg}\n'+
+                f'<p><b>{err.__class__.__name__}:</b> {err}',
+                show=True,
+                show_copy_button=False,
+            )
+            return
+        self.csv_header = header
+        self.csv_data = data
+        self.populate()
+
+    def populate(self):
+        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)))
+        
+        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_header)}
+        self.reference_header.clear()
+        self.reference_header.addItems(all_headers.values())
+        self.reference_header.setCurrentIndex(-1)
+        
+        self.reference_field.setCurrentIndex(-1)
+        
+        self.csv_widget.clear()
+        while self.data_selector.rowCount() > 0:
+            self.data_selector.removeRow(0)
+        
+        for idx, header in all_headers.items():
+            field_out = KeyValueComboBox(self.writable_fields, parent=self.scroll)
+            field_out.setCurrentIndex(-1)
+            h = QHBoxLayout()
+            h.addWidget(QLabel('⟹'))
+            h.addWidget(field_out)
+            self.data_selector.addRow(header, h)
+            self.csv_widget[idx] = field_out
 
     def view_raw_data(self):
         ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
