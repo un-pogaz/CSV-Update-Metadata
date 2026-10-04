@@ -710,8 +710,11 @@ class UpdateCSVdialog(Dialog):
         fm = current_db().field_metadata
         self.scroll = QScrollArea(self)
         l.addWidget(self.scroll)
+        sc = QWidget()
+        self.scroll.setWidget(sc)
+        self.scroll.setWidgetResizable(True)
         layout = QVBoxLayout(self.scroll)
-        self.scroll.setLayout(layout)
+        sc.setLayout(layout)
         
         all_fields = dict(sorted(
             ((n,field_name(fm, n)) for n in get_all_fields()),
