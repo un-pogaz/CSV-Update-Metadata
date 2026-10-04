@@ -689,33 +689,26 @@ class UpdateCSVdialog(Dialog):
         path_label.setAlignment(Qt.AlignCenter)
         l.addWidget(path_label)
         
-        view_layout = QHBoxLayout()
-        l.addLayout(view_layout)
+        button_layout = QHBoxLayout()
+        l.addLayout(button_layout)
+        l.addSpacing(10)
         
-        self.button_raw_data = QPushButton(get_icon(PLUGIN_ICON), '')
+        self.button_raw_data = QPushButton(get_icon(PLUGIN_ICON), '', self)
         self.button_raw_data.setToolTip(_('View the raw content of the loaded CSV file.'))
         self.button_raw_data.setMinimumWidth(200)
         self.button_raw_data.clicked.connect(self.view_raw_data)
         item_style(self.button_raw_data, bold=True)
         
-        self.button_reload_data = QPushButton(get_icon('view-refresh.png'), '')
+        self.button_reload_data = QPushButton(get_icon('view-refresh.png'), '', self)
         self.button_reload_data.setToolTip(_('Reload the content from the CSV file.'))
         self.button_reload_data.clicked.connect(self.reload_data)
         
-        view_layout.addStretch()
-        view_layout.addWidget(self.button_raw_data)
-        view_layout.addWidget(self.button_reload_data)
-        view_layout.addStretch()
+        button_layout.addStretch()
+        button_layout.addWidget(self.button_raw_data)
+        button_layout.addWidget(self.button_reload_data)
+        button_layout.addStretch()
         
         fm = current_db().field_metadata
-        self.scroll = QScrollArea(self)
-        l.addWidget(self.scroll)
-        sc = QWidget()
-        self.scroll.setWidget(sc)
-        self.scroll.setWidgetResizable(True)
-        layout = QVBoxLayout(self.scroll)
-        sc.setLayout(layout)
-        
         all_fields = dict(sorted(
             ((n,field_name(fm, n)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
@@ -728,23 +721,25 @@ class UpdateCSVdialog(Dialog):
             key=lambda x:sort_key(x[1]),
         ))
         
-        self.reference_header = NoWheelComboBox(self.scroll)
-        
-        self.reference_field = KeyValueComboBox(all_fields, parent=self.scroll)
+        self.reference_header = NoWheelComboBox(self)
+        self.reference_field = KeyValueComboBox(all_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
         
         reference_selector = QFormLayout()
         reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
         reference_selector.addRow(_('Book field to match:'), self.reference_field)
-        layout.addLayout(reference_selector)
+        l.addLayout(reference_selector)
         
         self.series_include_index = QCheckBox(_('Series-type fields include index'), self)
-        layout.addWidget(self.series_include_index)
+        l.addWidget(self.series_include_index)
         
-        self.frame = QFrame()
-        self.frame.setFrameShape(QFrame.HLine)
-        self.frame.setFrameShadow(QFrame.Sunken)
-        layout.addWidget(self.frame)
+        self.scroll = QScrollArea(self)
+        l.addWidget(self.scroll)
+        sc = QWidget()
+        self.scroll.setWidget(sc)
+        self.scroll.setWidgetResizable(True)
+        layout = QVBoxLayout(self.scroll)
+        sc.setLayout(layout)
         
         self.data_selector = QFormLayout()
         layout.addLayout(self.data_selector)
