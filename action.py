@@ -329,9 +329,13 @@ def _check_isbn(x):
 
 
 def get_adapter(name, metadata):
+    import copy  # noqa
     from calibre.db.write import get_adapter
     if name == 'isbn':
         return _check_isbn
+    if metadata['datatype'] == 'composite':
+        metadata = copy.deepcopy(metadata)
+        metadata['datatype'] = 'text'
     return get_adapter(name, metadata)
 
 
