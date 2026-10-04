@@ -388,7 +388,8 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             row = []
             mi = db.get_metadata(id)
             for field in fields.keys():
-                row.append(mi.format_field(field, series_with_index=False)[1].replace('\n', '\\n'))
+                value = mi.format_field(field, series_with_index=False)[1] or ''
+                row.append(value.replace('\n', '\\n'))
             writer.writerow(row)
 
 
@@ -453,10 +454,11 @@ class ExportCSVdialog(Dialog):
         fm = current_db().field_metadata
 
         def key_buider(field):
-            return sort_order.get(field, 1000), field_name(fm, field), field
+            name = field_name(fm, field)
+            return (sort_order.get(field, 1000), sort_key(name)), name, field
 
         self.list.clear()
-        for idx, name, field in sorted(map(key_buider, get_all_fields())):
+        for _x, name, field in sorted(map(key_buider, get_all_fields())):
             item = QListWidgetItem(name, self.list)
             item.setData(Qt.ItemDataRole.UserRole, field)
             item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
