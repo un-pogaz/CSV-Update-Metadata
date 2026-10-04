@@ -16,7 +16,6 @@ from typing import Dict, List, Set, Tuple
 
 try:
     from qt.core import (
-        QAbstractItemView,
         QDialog,
         QFileDialog,
         QFormLayout,
@@ -40,7 +39,6 @@ try:
     )
 except ImportError:
     from PyQt5.Qt import (
-        QAbstractItemView,
         QDialog,
         QFileDialog,
         QFormLayout,
@@ -350,10 +348,10 @@ class ExportCSVdialog(Dialog):
         l.addWidget(QLabel(_('Fields to export in output:'), self))
         self.list = QListWidget(self)
         self.list.setDragEnabled(True)
-        self.list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.list.setDefaultDropAction(Qt.DropAction.CopyAction if ismacos else Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
-        self.list.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
+        self.list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         
         l.addWidget(self.list)
         
@@ -623,7 +621,6 @@ class UpdateCSVdialog(Dialog):
         
         view_layout = QHBoxLayout()
         l.addLayout(view_layout)
-        view_layout.setAlignment(Qt.AlignCenter)
         self.button_raw_data = QPushButton(
             get_icon(PLUGIN_ICON),
             ' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)),
