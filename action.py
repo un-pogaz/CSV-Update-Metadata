@@ -338,7 +338,7 @@ def _check_isbn(x):
     
     rslt = check_isbn(x)
     if not rslt:
-        raise ValueError(f'invalid value for isbn: {rslt}')
+        raise ValueError(f'invalid value for isbn: {rslt!r}')
     return rslt
 
 
