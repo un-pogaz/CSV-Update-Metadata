@@ -847,7 +847,7 @@ class UpdateCSVdialog(Dialog):
                             field_name(fm, header[f]),
                             err,
                         ))
-            if tbl[0] not in {'', None, 'NULL'}:
+            if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
                 data.append(tbl)
                 errors.extend(e for e in tbl if isinstance(e, CSVdataError))
         
@@ -885,12 +885,6 @@ class UpdateCSVdialog(Dialog):
             for value in row:
                 if value is None:
                     value = 'NULL'
-                elif isinstance(value, (list, tuple)):
-                    if not value:
-                        value = 'NULL'
-                    else:
-                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                        value = sv.join(value)
                 elif isinstance(value, (int, float, bool)):
                     value = str(value).lower()
                 elif isinstance(value, datetime):
@@ -900,6 +894,12 @@ class UpdateCSVdialog(Dialog):
                         value = value.isoformat(' ')
                         value = value.replace('+00:00', '')
                         value = value.replace('00:00:00', '')
+                elif isinstance(value, (list, tuple)):
+                    if not value:
+                        value = 'NULL'
+                    else:
+                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                        value = sv.join(value)
                 elif isinstance(value, dict):
                     if not value:
                         value = 'NULL'
