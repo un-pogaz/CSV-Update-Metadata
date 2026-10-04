@@ -321,6 +321,67 @@ def field_name(fm, field):
     return f'{name} ({field})'
 
 
+def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tuple[List[str], List[List[str]]]:
+    '''
+    Load a CSV file from the given path.
+    
+    sanitize: ensure that the content is "rectangle table" (every row as the header length)
+    validate: perform additional check of the content (2 columns, 2 rows, no empty header)
+    '''
+    
+    with open(csv_path, encoding='utf-8') as f:
+        raw = f.read().splitlines(False)
+    raw = list(csv.reader(raw, CSV))
+    header = raw[0]
+    data = raw[1:]
+    
+    if validate:
+        if not data:
+            raise ValueError(_('The input CSV need at least 2 rows (one for the header and the others for the data).'))
+        if len(header) < 2:
+            raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
+        for i in range(len(header)):
+            header[i] = header[i].strip()
+            if not header[i]:
+                raise ValueError(_('One column header is empty, index {}.').format(i+1))
+    
+    if sanitize:
+        h = len(header)
+        for i,row in enumerate(data):
+            if len(row) < h:
+                row.extend('' for x in range(h-len(row)))
+            data[i] = [e.strip() for e in row[:h]]
+    
+    return header, data
+
+
+def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> None:
+    db = current_db().new_api
+    with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
+        writer = csv.writer(f, CSV)
+        writer.writerow(fields.values())
+        for id in ids:
+            row = []
+            mi = db.get_metadata(id)
+            for field in fields.keys():
+                row.append(mi.format_field(field, False)[1])
+            writer.writerow(row)
+
+
+def update_library_data(header, data):
+    if len(header) < 2 or not data:
+        return
+    
+    db = current_db().new_api
+
+
+def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
+    font = item.font()
+    font.setBold(bold)
+    font.setItalic(italic)
+    item.setFont(font)
+
+
 class ExportCSVdialog(Dialog):
     def __init__(self, ids: List[int]=[], parent=None):
         self.ids = ids or []
@@ -412,67 +473,6 @@ class ExportCSVdialog(Dialog):
         LIBRARY_PREFS['fields'] = list(fields.keys())
         export_csv_file(file, fields, self.ids)
         Dialog.accept(self)
-
-
-def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tuple[List[str], List[List[str]]]:
-    '''
-    Load a CSV file from the given path.
-    
-    sanitize: ensure that the content is "rectangle table" (every row as the header length)
-    validate: perform additional check of the content (2 columns, 2 rows, no empty header)
-    '''
-    
-    with open(csv_path, encoding='utf-8') as f:
-        raw = f.read().splitlines(False)
-    raw = list(csv.reader(raw, CSV))
-    header = raw[0]
-    data = raw[1:]
-    
-    if validate:
-        if not data:
-            raise ValueError(_('The input CSV need at least 2 rows (one for the header and the others for the data).'))
-        if len(header) < 2:
-            raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
-        for i in range(len(header)):
-            header[i] = header[i].strip()
-            if not header[i]:
-                raise ValueError(_('One column header is empty, index {}.').format(i+1))
-    
-    if sanitize:
-        h = len(header)
-        for i,row in enumerate(data):
-            if len(row) < h:
-                row.extend('' for x in range(h-len(row)))
-            data[i] = [e.strip() for e in row[:h]]
-    
-    return header, data
-
-
-def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> None:
-    db = current_db().new_api
-    with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
-        writer = csv.writer(f, CSV)
-        writer.writerow(fields.values())
-        for id in ids:
-            row = []
-            mi = db.get_metadata(id)
-            for field in fields.keys():
-                row.append(mi.format_field(field, False)[1])
-            writer.writerow(row)
-
-
-def update_library_data(header, data):
-    if len(header) < 2 or not data:
-        return
-    
-    db = current_db().new_api
-
-
-def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
-    font = item.font()
-    font.setBold(bold)
-    font.setItalic(italic)
-    item.setFont(font)
 
 
 class CSVdataError:
