@@ -26,12 +26,14 @@ try:
         QListWidget,
         QListWidgetItem,
         QMenu,
+        QProgressDialog,
         QPushButton,
         QScrollArea,
         Qt,
         QTableWidget,
         QTableWidgetItem,
         QTextBrowser,
+        QTimer,
         QToolButton,
         QVBoxLayout,
         QWidget,
@@ -48,12 +50,14 @@ except ImportError:
         QListWidget,
         QListWidgetItem,
         QMenu,
+        QProgressDialog,
         QPushButton,
         QScrollArea,
         Qt,
         QTableWidget,
         QTableWidgetItem,
         QTextBrowser,
+        QTimer,
         QToolButton,
         QVBoxLayout,
         QWidget,
@@ -228,13 +232,38 @@ class CSVMetadataAction(InterfaceAction):
             )
             return
         
-        UpdateCSVdialog(path, header, data, parent=GUI).exec()
+        d = UpdateCSVdialog(path, header, data, parent=GUI)
+        rslt = d.exec()
+        if rslt == Dialog.DialogCode.Accepted and d.header:
+            UpdateDataProgress(d.header, d.data)
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
         if not ids:
             return
         ExportCSVdialog(ids, GUI).exec()
+
+
+class UpdateDataProgress(QProgressDialog):
+    def __init__(self, header, data):
+        self.header = header
+        self.data = data
+        
+        QProgressDialog.__init__(self, '', None, 0, 0, GUI)
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(100)
+        self.setMinimumDuration(100)
+        self.setWindowIcon(get_icon(PLUGIN_ICON))
+        self.setWindowTitle(_('Updating data from CSV'))
+        self.setLabelText('Updating Library…')
+        self.setValue(-1)
+        self.show()
+        QTimer.singleShot(1, self.run_job)
+        self.exec()
+
+    def run_job(self):
+        update_library_data(self.header, self.data)
+        self.close()
 
 
 def pick_csv_to_load(parent=None) -> str:
@@ -428,6 +457,13 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int]) -> No
             writer.writerow(row)
 
 
+def update_library_data(header, data):
+    if len(header) < 2 or not data:
+        return
+    
+    db = current_db().new_api
+
+
 def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
     font = item.font()
     font.setBold(bold)
@@ -568,6 +604,8 @@ class UpdateCSVdialog(Dialog):
         self.csv_header = header
         self.csv_data = data
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
+        self.header = []
+        self.data = []
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -746,8 +784,8 @@ class UpdateCSVdialog(Dialog):
         return header, data, errors
 
     def accept(self):
-        header, data = self.preview_update_data(validate=True)
-        if not header:
+        self.header, self.data = self.preview_update_data(validate=True)
+        if not self.header:
             return
         Dialog.accept(self)
 
