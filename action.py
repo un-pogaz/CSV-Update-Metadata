@@ -661,6 +661,7 @@ class UpdateCSVdialog(Dialog):
         item_style(self.button_raw_data, bold=True)
         
         self.button_reload_data = QPushButton(get_icon('view-refresh.png'), '')
+        self.button_reload_data.setToolTip(_('Reload the content from the CSV file.'))
         self.button_reload_data.clicked.connect(self.reload_data)
         
         view_layout.addStretch()
