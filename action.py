@@ -205,7 +205,7 @@ class CSVMetadataAction(InterfaceAction):
             header, data = load_csv_file(path)
         except Exception as err:
             msg = '<br>'.join([
-                _('The selected CSV fail to be loaded because is a malformed format.'),
+                _('The selected CSV file fail to be loaded because is a malformed format.'),
                 _('To be sure to use a valid format, check the section "About the CSV Format".'),
             ])
             error_dialog(
