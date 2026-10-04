@@ -88,7 +88,6 @@ class CSV(csv.Dialect):
     delimiter = ','
     quotechar = '"'
     doublequote = True
-    skipinitialspace = False
     lineterminator = '\n'
     quoting = csv.QUOTE_ALL
 
@@ -349,7 +348,7 @@ def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tu
     
     with open(csv_path, encoding='utf-8') as f:
         raw = f.read().splitlines(False)
-    raw = list(csv.reader(raw, CSV))
+    raw = list(csv.reader((r for r in raw if r), CSV))
     header = raw[0]
     data = raw[1:]
     
