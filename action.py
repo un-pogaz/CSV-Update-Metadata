@@ -12,6 +12,7 @@ except NameError:
 import csv
 import re
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from typing import Dict, List, Set, Tuple
 
@@ -373,6 +374,22 @@ def get_adapter(name, metadata, *, series_with_index=False):
     return get_adapter(name, metadata)
 
 
+def quoted_line_return(csvfile: Iterable[str]) -> Iterator[str]:
+    'Preserve line return in quoted value'
+    in_quote = False
+    row = []
+    for line in csvfile:
+        row.append(line)
+        if bool(line.count('"') % 2):  # impair quote
+            if in_quote:
+                in_quote = False
+            else:
+                in_quote = True
+        if not in_quote:
+            yield '\n'.join(row)
+            row.clear()
+
+
 def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
     '''
     Load a CSV file from the given path.
@@ -387,21 +404,7 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tu
     with open(csv_path, encoding='utf-8') as f:
         text = f.read()
     
-    # preserve line return in quote
-    tbl, row = [], []
-    in_quote = False
-    for line in text.splitlines(False):
-        row.append(line)
-        if bool(line.count('"') % 2):  # impair quote
-            if in_quote:
-                in_quote = False
-            else:
-                in_quote = True
-        if not in_quote:
-            tbl.append('\n'.join(row))
-            row = []
-    
-    raw = list(csv.reader(tbl, CSV))
+    raw = list(csv.reader(quoted_line_return(text.splitlines(False)), CSV))
     header = raw[0]
     data = raw[1:]
     
