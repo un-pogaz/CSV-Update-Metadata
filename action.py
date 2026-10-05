@@ -148,8 +148,6 @@ class CSVformatDialog(Dialog):
             _('Empty value will be skipped (no edit action).'),
             _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
         ))
-        append('p', _('Important. Line return inside of a quoted value are <i>completely ignored</i>. '
-                      "To insert a line return into the value, you need to use the escape code '<code>\\n</code>'."))
         rslt.append('<hr>')
         append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
@@ -375,17 +373,35 @@ def get_adapter(name, metadata, *, series_with_index=False):
     return get_adapter(name, metadata)
 
 
-def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tuple[List[str], List[List[str]]]:
+def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
     '''
     Load a CSV file from the given path.
     
-    sanitize: ensure that the content is "rectangle table" (every row as the header length)
     validate: perform additional check of the content (2 columns, 2 rows, no empty header)
+    sanitize:
+        1) ensure that the content is a "rectangle table" (every row as the header length)
+        2) skip empty blank lines (0 value)
+        3) strip headers and values
     '''
     
     with open(csv_path, encoding='utf-8') as f:
-        raw = f.read().splitlines(False)
-    raw = list(csv.reader((r for r in raw if r), CSV))
+        text = f.read()
+    
+    # preserve line return in quote
+    tbl, row = [], []
+    in_quote = False
+    for line in text.splitlines(False):
+        row.append(line)
+        if bool(line.count('"') % 2):  # impair quote
+            if in_quote:
+                in_quote = False
+            else:
+                in_quote = True
+        if not in_quote:
+            tbl.append('\n'.join(row))
+            row = []
+    
+    raw = list(csv.reader(tbl, CSV))
     header = raw[0]
     data = raw[1:]
     
@@ -399,15 +415,14 @@ def load_csv_file(csv_path: str, sanitize: bool=True, validate: bool=True) -> Tu
             if not header[i]:
                 raise ValueError(_('One column header is empty, index {}.').format(i+1))
     
-    def strip(val):
-        return val.replace('\\n', '\n').strip().replace('\n', '\\n')
-    
     if sanitize:
+        header = [h.strip().replace('\n', ' ') for h in header]
+        data = [d for d in data if d]
         h = len(header)
         for i,row in enumerate(data):
             if len(row) < h:
                 row.extend('' for x in range(h-len(row)))
-            data[i] = [strip(e) for e in row[:h]]
+            data[i] = [e.strip() for e in row[:h]]
     
     return header, data
 
@@ -422,7 +437,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             mi = db.get_metadata(id)
             for field in fields.keys():
                 value = mi.format_field(field, series_with_index=series_with_index)[1] or ''
-                row.append(value.replace('\n', '\\n'))
+                row.append(value.strip())
             writer.writerow(row)
 
 
@@ -882,7 +897,7 @@ class UpdateCSVdialog(Dialog):
                     tbl.append(None)
                 else:
                     try:
-                        tbl.append(adapters[f](row[c].replace('\\n', '\n')))
+                        tbl.append(adapters[f](row[c]))
                     except Exception as err:
                         tbl.append(CSVdataError(
                             c, r,
@@ -951,7 +966,7 @@ class UpdateCSVdialog(Dialog):
                         sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
                         value = sv.join([f'{k}:{v}' for k,v in value])
                 if isinstance(value, str):
-                    value = value.strip().replace('\n', '\\n')
+                    value = value.strip()
                 tbl.append(value)
         
         rslt = ViewCSVdataDialog(pre_header, pre_data, errors=errors, has_reference=True, validate=validate, parent=self).exec()
