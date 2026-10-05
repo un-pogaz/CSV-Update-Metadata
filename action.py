@@ -410,10 +410,6 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tu
             raise ValueError(_('The input CSV need at least 2 rows (one for the header and the others for the data).'))
         if len(header) < 2:
             raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
-        for i in range(len(header)):
-            header[i] = header[i].strip()
-            if not header[i]:
-                raise ValueError(_('One column header is empty, index {}.').format(i+1))
     
     if sanitize:
         header = [h.strip().replace('\n', ' ') for h in header]
@@ -625,7 +621,7 @@ class ViewCSVdataDialog(Dialog):
         l.addWidget(t)
         
         t.setColumnCount(len(self.header))
-        t.setHorizontalHeaderLabels(self.header)
+        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.header)])
         t.verticalHeader().setDefaultSectionSize(24)
         
         t.setRowCount(len(self.data))
