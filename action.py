@@ -72,7 +72,6 @@ from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import sort_key
 
 from .common_utils import CALIBRE_VERSION, GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_icon
-from .common_utils.columns import ColumnMetadata, get_columns_where
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
@@ -287,7 +286,7 @@ def get_all_fields() -> Set[str]:
     from calibre.library.catalogs import FIELDS
     db = current_db()
     fm = db.field_metadata
-    rslt = {x for x in FIELDS if x not in ['all', 'ondevice', 'cover']}
+    rslt = {x for x in FIELDS if x not in {'all', 'ondevice', 'cover'}}
     for field in db.custom_field_keys():
         rslt.add(field)
         if field.startswith('#') and fm[field]['datatype'] == 'series':
@@ -298,16 +297,17 @@ def get_all_fields() -> Set[str]:
 
 
 def get_writable_fields() -> Set[str]:
+    db = current_db()
     all_fields = get_all_fields()
-    def predicate(col: ColumnMetadata):
-        if col.name not in all_fields:
+    def f(name, metadata):
+        if name not in all_fields:
             return False
-        if col.is_composite:
+        if name in {'library_name', 'id', 'uuid', 'formats', 'size', 'pages'}:
             return False
-        if col.name in {'library_name', 'id', 'uuid', 'formats', 'size', 'pages'}:
+        if metadata['datatype'] == 'composite':
             return False
         return True
-    return set(get_columns_where(predicate).keys())
+    return {k for k,v in db.field_metadata.items() if f(k,v)}
 
 
 def field_name(fm, field):
