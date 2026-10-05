@@ -326,7 +326,7 @@ def field_name(fm, field):
     return f'{name} ({field})'
 
 
-def _check_isbn(x):
+def _parse_isbn(x):
     from calibre.db.write import single_text
     from calibre.ebooks.metadata import check_isbn
     
@@ -336,7 +336,7 @@ def _check_isbn(x):
     
     rslt = check_isbn(x)
     if not rslt:
-        raise ValueError(f'invalid value for isbn: {rslt!r}')
+        return x
     return rslt
 
 
@@ -364,7 +364,7 @@ def get_adapter(name, metadata, *, series_with_index=False):
     import copy  # noqa
     from calibre.db.write import get_adapter
     if name == 'isbn':
-        return _check_isbn
+        return _parse_isbn
     if metadata['datatype'] == 'series' and series_with_index:
         return _series_with_index
     if metadata['datatype'] == 'composite':
