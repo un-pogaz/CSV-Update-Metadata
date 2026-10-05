@@ -724,7 +724,7 @@ class UpdateCSVdialog(Dialog):
             ((n,field_name(fm, n)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
         ))
-        for n in ('library_name'):
+        for n in ('library_name',):
             all_fields.pop(n, None)
         self.writable_fields = {'':''}
         self.writable_fields.update(sorted(
