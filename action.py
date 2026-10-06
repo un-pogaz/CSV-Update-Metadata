@@ -374,22 +374,6 @@ def get_adapter(name, metadata, *, series_with_index=False):
     return get_adapter(name, metadata)
 
 
-def quoted_line_return(csvfile: Iterable[str]) -> Iterator[str]:
-    'Preserve line return in quoted value'
-    in_quote = False
-    row = []
-    for line in csvfile:
-        row.append(line)
-        if bool(line.count('"') % 2):  # impair quote
-            if in_quote:
-                in_quote = False
-            else:
-                in_quote = True
-        if not in_quote:
-            yield '\n'.join(row)
-            row.clear()
-
-
 def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
     '''
     Load a CSV file from the given path.
@@ -400,11 +384,11 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tu
         2) skip empty blank lines (0 value)
         3) strip headers and values
     '''
+    # pass the file reader without newline detection
+    # csv.reader handle universal newline sheniganies
+    with open(csv_path, newline='', encoding='utf-8') as f:
+        raw = list(csv.reader(f, CSV))
     
-    with open(csv_path, encoding='utf-8') as f:
-        text = f.read()
-    
-    raw = list(csv.reader(quoted_line_return(text.splitlines(False)), CSV))
     header = raw[0]
     data = raw[1:]
     
