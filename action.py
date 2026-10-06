@@ -735,9 +735,6 @@ class UpdateCSVdialog(Dialog):
         reference_selector.addRow(_('Book field to match:'), self.reference_field)
         l.addLayout(reference_selector)
         
-        self.series_include_index = QCheckBox(_('Series-type fields include index'), self)
-        l.addWidget(self.series_include_index)
-        
         self.scroll = QScrollArea(self)
         l.addWidget(self.scroll)
         sc = QWidget()
@@ -745,6 +742,9 @@ class UpdateCSVdialog(Dialog):
         self.scroll.setWidgetResizable(True)
         layout = QVBoxLayout(self.scroll)
         sc.setLayout(layout)
+        
+        self.series_include_index = QCheckBox(_('Series-type fields include index'), self)
+        layout.addWidget(self.series_include_index)
         
         self.data_selector = QFormLayout()
         layout.addLayout(self.data_selector)
