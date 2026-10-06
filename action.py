@@ -632,6 +632,10 @@ class ViewCSVdataDialog(Dialog):
                     item_style(item, italic=True)
                 else:
                     item.setText(data)
+                    item.setToolTip(
+                        '<p style="white-space:pre">'+
+                        data.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    )
                 if data == 'NULL':
                     item_style(item, italic=True)
                 t.setItem(idr, idc, item)
