@@ -398,14 +398,17 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tu
         if len(header) < 2:
             raise ValueError(_('The input CSV need at least 2 columns (one has reference and the others for the data).'))
     
+    def strip(val, join):
+        return join.join(val.strip().splitlines())
+    
     if sanitize:
-        header = [h.strip().replace('\n', ' ') for h in header]
+        header = [strip(h, ' ') for h in header]
         data = [d for d in data if d]
         h = len(header)
         for i,row in enumerate(data):
             if len(row) < h:
                 row.extend('' for x in range(h-len(row)))
-            data[i] = [e.strip() for e in row[:h]]
+            data[i] = [strip(e, '\n') for e in row[:h]]
     
     return header, data
 
