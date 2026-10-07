@@ -287,7 +287,7 @@ def get_all_fields() -> Set[str]:
     from calibre.library.catalogs import FIELDS
     db = current_db()
     fm = db.field_metadata
-    rslt = {x for x in FIELDS if x not in {'all', 'ondevice', 'cover'}}
+    rslt = {x for x in FIELDS if x not in {'all', 'ondevice', 'formats', 'cover'}}
     for field in db.custom_field_keys():
         if fm[field]['datatype'] == 'composite':
             continue
@@ -300,21 +300,17 @@ def get_all_fields() -> Set[str]:
 
 
 def get_writable_fields() -> Set[str]:
-    db = current_db()
     all_fields = get_all_fields()
-    def f(name, metadata):
-        if name not in all_fields:
-            return False
-        if name in {'library_name', 'id', 'uuid', 'formats', 'size', 'pages'}:
-            return False
-        return True
-    return {k for k,v in db.field_metadata.items() if f(k,v)}
+    excluded = {'library_name', 'id', 'uuid', 'size', 'pages'}
+    return {k for k in get_all_fields() if k not in excluded}
 
 
 def field_name(fm, field):
     name = None
     if field == 'isbn':
         name = 'ISBN'
+    if field == 'uuid':
+        name = 'UUID'
     if field == 'library_name':
         name = _('Library name')
     if field.endswith('_index'):
