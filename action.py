@@ -289,8 +289,10 @@ def get_all_fields() -> Set[str]:
     fm = db.field_metadata
     rslt = {x for x in FIELDS if x not in {'all', 'ondevice', 'cover'}}
     for field in db.custom_field_keys():
+        if fm[field]['datatype'] == 'composite':
+            continue
         rslt.add(field)
-        if field.startswith('#') and fm[field]['datatype'] == 'series':
+        if fm[field]['datatype'] == 'series':
             rslt.add(field + '_index')
     if CALIBRE_VERSION >= (9,00,0):
         rslt.add('pages')
@@ -304,8 +306,6 @@ def get_writable_fields() -> Set[str]:
         if name not in all_fields:
             return False
         if name in {'library_name', 'id', 'uuid', 'formats', 'size', 'pages'}:
-            return False
-        if metadata['datatype'] == 'composite':
             return False
         return True
     return {k for k,v in db.field_metadata.items() if f(k,v)}
@@ -362,15 +362,12 @@ def _series_with_index(x):
 
 
 def get_adapter(name, metadata, *, series_with_index=False):
-    import copy  # noqa
     from calibre.db.write import get_adapter
+    
     if name == 'isbn':
         return _parse_isbn
     if metadata['datatype'] == 'series' and series_with_index:
         return _series_with_index
-    if metadata['datatype'] == 'composite':
-        metadata = copy.deepcopy(metadata)
-        metadata['datatype'] = 'text'
     return get_adapter(name, metadata)
 
 
