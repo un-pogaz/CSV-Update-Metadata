@@ -762,6 +762,7 @@ class UpdateCSVdialog(Dialog):
             self,
             _('Are you sure?'),
             _('Are you sure you want to reload the CSV file?'),
+            skip_dialog_name='plugin.CSVMetadata:reload_data',
         ):
             return
         try:
