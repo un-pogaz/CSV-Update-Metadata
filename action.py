@@ -398,6 +398,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
             return None
         if name == 'authors' and rslt == unknown_author():
             return None
+        if name == 'author_sort' and not rslt:
+            return None
         return rslt
     return f
 
