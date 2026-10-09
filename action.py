@@ -14,6 +14,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from typing import Callable, Dict, List, Set
 
 try:
@@ -373,6 +374,13 @@ def _series_with_index(x):
     return f'{x[0]} [{x[1]}]'
 
 
+@lru_cache(maxsize=2)
+def unknown_author():
+    from calibre.db.write import get_adapter
+    metadata = {'datatype':'text', 'is_multiple': {'cache_to_list': ',', 'ui_to_list': '&', 'list_to_ui': ' & '}}
+    return get_adapter('authors', metadata)(None)
+
+
 def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> Callable:
     from calibre.db.write import get_adapter
     
@@ -387,6 +395,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
         if isinstance(rslt, (list, tuple, dict)) and not rslt:
             return None
         if isinstance(rslt, datetime) and is_date_undefined(rslt):
+            return None
+        if name == 'authors' and rslt == unknown_author():
             return None
         return rslt
     return f
