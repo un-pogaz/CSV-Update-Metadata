@@ -12,9 +12,9 @@ except NameError:
 import csv
 import re
 from collections import defaultdict
-from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
 
 try:
     from qt.core import (
@@ -96,6 +96,28 @@ class CSV(csv.Dialect):
     quoting = csv.QUOTE_ALL
 
 
+class CSVdataError:
+    def __init__(self, column: int, line: int, header: str, field: str, exc: Exception):
+        self.column = column
+        self.line = line
+        self.header = header
+        self.field = field
+        self.exc = exc
+    
+    @property
+    def exc_text(self):
+        return f'{self.exc.__class__.__name__}: {self.exc}'
+
+
+@dataclass
+class CSVdata:
+    header: List[str]
+    rows: List[List[str]]
+    errors: List[CSVdataError] = None
+    has_reference: bool = False
+    series_with_index: bool = False
+
+
 class CSVformatDialog(Dialog):
     def __init__(self, parent=None):
         Dialog.__init__(self,
@@ -157,7 +179,6 @@ class CSVformatDialog(Dialog):
 
 
 class CSVMetadataAction(InterfaceAction):
-    
     name = PLUGIN_NAME
     # Create our top-level menu/toolbar action (text, icon_path, tooltip, keyboard shortcut)
     action_spec = (PLUGIN_NAME, None, _('Update Metadata from a CSV file template'), None)
@@ -207,7 +228,7 @@ class CSVMetadataAction(InterfaceAction):
         if not path:
             return
         try:
-            header, data = load_csv_file(path)
+            data = load_csv_file(path)
         except Exception as err:
             msg = '<br>'.join([
                 _('The selected CSV file fail to be loaded because is a malformed format.'),
@@ -223,10 +244,10 @@ class CSVMetadataAction(InterfaceAction):
             )
             return
         
-        d = UpdateCSVdialog(path, header, data, parent=GUI)
+        d = UpdateCSVdialog(path, data, parent=GUI)
         rslt = d.exec()
-        if rslt == Dialog.DialogCode.Accepted and d.header:
-            UpdateDataProgress(d.header, d.data, d.series_with_index)
+        if rslt == Dialog.DialogCode.Accepted and d.data:
+            UpdateDataProgress(d.data)
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
@@ -236,11 +257,8 @@ class CSVMetadataAction(InterfaceAction):
 
 
 class UpdateDataProgress(QProgressDialog):
-    def __init__(self, header, data, series_with_index):
-        self.header = header
+    def __init__(self, data: CSVdata):
         self.data = data
-        self.series_with_index = series_with_index
-        
         QProgressDialog.__init__(self, '', None, 0, 0, GUI)
         self.setMinimumWidth(500)
         self.setMinimumHeight(100)
@@ -254,7 +272,7 @@ class UpdateDataProgress(QProgressDialog):
         self.exec()
 
     def run_job(self):
-        update_library_data(self.header, self.data, self.series_with_index)
+        update_library_data(self.data)
         self.close()
 
 
@@ -367,7 +385,7 @@ def get_adapter(name, metadata, *, series_with_index=False):
     return get_adapter(name, metadata)
 
 
-def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tuple[List[str], List[List[str]]]:
+def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CSVdata:
     '''
     Load a CSV file from the given path.
     
@@ -403,7 +421,7 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> Tu
                 row.extend('' for x in range(h-len(row)))
             data[i] = [strip(e, '\n') for e in row[:h]]
     
-    return header, data
+    return CSVdata(header, data)
 
 
 def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, series_with_index: bool=False) -> None:
@@ -420,8 +438,8 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
-def update_library_data(header: List, data: List[List], *, series_with_index: bool=False):
-    if len(header) < 2 or not data:
+def update_library_data(data: CSVdata):
+    if not data or not data.header or not data.rows or len(data.header) < 2:
         return
     
     db = current_db().new_api
@@ -532,19 +550,6 @@ class ExportCSVdialog(Dialog):
         Dialog.accept(self)
 
 
-class CSVdataError:
-    def __init__(self, column: int, line: int, header: str, field: str, exc: Exception):
-        self.column = column
-        self.line = line
-        self.header = header
-        self.field = field
-        self.exc = exc
-    
-    @property
-    def exc_text(self):
-        return f'{self.exc.__class__.__name__}: {self.exc}'
-
-
 class DataErrorViewer(QDialog):
     def __init__(self, errors: List[CSVdataError] = [], parent=None):
         super().__init__(parent)
@@ -574,17 +579,11 @@ class DataErrorViewer(QDialog):
 class ViewCSVdataDialog(Dialog):
     def __init__(
         self,
-        header: List[str],
-        data: List[List[str]],
-        errors: List[CSVdataError] = None,
-        has_reference: bool=False,
+        data: CSVdata,
         validate: bool=False,
         parent=None,
     ):
-        self.header = header or []
-        self.data = data or []
-        self.errors = errors or []
-        self.has_reference = has_reference or False
+        self.data = data
         self.validate = validate or False
         Dialog.__init__(self,
             title=_('View CSV content data'),
@@ -603,12 +602,12 @@ class ViewCSVdataDialog(Dialog):
         t.setMinimumSize(400, 200)
         l.addWidget(t)
         
-        t.setColumnCount(len(self.header))
-        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.header)])
+        t.setColumnCount(len(self.data.header))
+        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.data.header)])
         t.verticalHeader().setDefaultSectionSize(24)
         
-        t.setRowCount(len(self.data))
-        for idr,row in enumerate(self.data):
+        t.setRowCount(len(self.data.rows))
+        for idr,row in enumerate(self.data.rows):
             for idc,data in enumerate(row):
                 item = QTableWidgetItem()
                 item.setFlags(Qt.ItemIsEnabled)
@@ -632,12 +631,12 @@ class ViewCSVdataDialog(Dialog):
                 if data == 'NULL':
                     item_style(item, italic=True)
                 t.setItem(idr, idc, item)
-        if self.has_reference:
+        if self.data.has_reference:
             item_style(t.horizontalHeaderItem(0), italic=True)
             for r in range(t.rowCount()):
                 item_style(t.item(r, 0), italic=True)
         
-        if self.errors:
+        if self.data.errors:
             btn = QPushButton(get_icon('dialog_error.png'), _('View errors'))
             btn.setMinimumWidth(100)
             btn.clicked.connect(self.show_data_error_viewer)
@@ -649,7 +648,7 @@ class ViewCSVdataDialog(Dialog):
             l.addWidget(self.bb)
     
     def show_data_error_viewer(self):
-        DataErrorViewer(self.errors ,self).exec()
+        DataErrorViewer(self.data.errors, self).exec()
     
     def accept(self):
         rslt = question_dialog(
@@ -664,14 +663,11 @@ class ViewCSVdataDialog(Dialog):
 
 
 class UpdateCSVdialog(Dialog):
-    def __init__(self, csv_path: str, header: List[str], data: List[List[str]], parent=None):
+    def __init__(self, csv_path: str, data: CSVdata, parent=None):
         self.csv_path = csv_path
-        self.csv_header = header
         self.csv_data = data
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
-        self.header = []
-        self.data = []
-        self.series_with_index = False
+        self.data: CSVdata = None
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -766,7 +762,7 @@ class UpdateCSVdialog(Dialog):
         ):
             return
         try:
-            header, data = load_csv_file(self.csv_path)
+            data = load_csv_file(self.csv_path)
         except Exception as err:
             msg = '<br>'.join([
                 _('The reload of the CSV file fail is a malformed format.'),
@@ -781,14 +777,13 @@ class UpdateCSVdialog(Dialog):
                 show_copy_button=False,
             )
             return
-        self.csv_header = header
         self.csv_data = data
         self.populate()
 
     def populate(self):
-        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_header), len(self.csv_data)))
+        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_data.header), len(self.csv_data.rows)))
         
-        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_header)}
+        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_data.header)}
         self.reference_header.clear()
         self.reference_header.addItems(all_headers.values())
         self.reference_header.setCurrentIndex(-1)
@@ -809,13 +804,13 @@ class UpdateCSVdialog(Dialog):
             self.csv_widget[idx] = field_out
 
     def view_raw_data(self):
-        ViewCSVdataDialog(self.csv_header, self.csv_data, parent=self).exec()
+        ViewCSVdataDialog(self.csv_data, parent=self).exec()
 
     def preview_data(self):
         self.preview_update_data(validate=False)
 
-    def get_data_update_map(self) -> Tuple[List[str], List[List[str]], List[CSVdataError]]:
-        if not self.csv_header or not self.csv_data:
+    def get_data_update_map(self) -> CSVdata:
+        if not self.csv_data.header or not self.csv_data.rows:
             error_dialog(
                 self,
                 _('Source CSV is empty'),
@@ -823,7 +818,7 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], [], []
+            return None
         
         if self.reference_header.currentIndex() == -1:
             error_dialog(
@@ -833,7 +828,7 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], [], []
+            return None
         if self.reference_field.currentIndex() == -1:
             error_dialog(
                 self,
@@ -842,7 +837,7 @@ class UpdateCSVdialog(Dialog):
                 show=True,
                 show_copy_button=False,
             )
-            return [], [], []
+            return None
         
         fm = current_db().field_metadata
         header, data = [], []
@@ -865,14 +860,14 @@ class UpdateCSVdialog(Dialog):
                         show=True,
                         show_copy_button=False,
                     )
-                    return [], [], []
+                    return None
                 header.append(k)
                 data_map.append(i)
         
         swi = self.series_include_index.isChecked()
         adapters = [get_adapter(k, fm[k], series_with_index=swi) for k in header]
         r, f, c = 0, 0, 0
-        for r,row in enumerate(self.csv_data):
+        for r,row in enumerate(self.csv_data.rows):
             tbl = []
             for f,c in enumerate(data_map):
                 if row[c] == '':
@@ -885,7 +880,7 @@ class UpdateCSVdialog(Dialog):
                     except Exception as err:
                         tbl.append(CSVdataError(
                             c, r,
-                            self.csv_header[c],
+                            self.csv_data.header[c],
                             field_name(fm, header[f]),
                             err,
                         ))
@@ -893,36 +888,36 @@ class UpdateCSVdialog(Dialog):
                 data.append(tbl)
                 errors.extend(e for e in tbl if isinstance(e, CSVdataError))
         
-        return header, data, errors
+        return CSVdata(header, data, errors=errors)
 
     def accept(self):
-        self.series_with_index = self.series_include_index.isChecked()
-        self.header, self.data = self.preview_update_data(validate=True)
-        if not self.header:
+        self.data = self.preview_update_data(validate=True)
+        if not self.data or self.data.errors:
             return
+        self.data.series_with_index = self.series_include_index.isChecked()
         Dialog.accept(self)
 
-    def preview_update_data(self, validate: bool=False) -> Tuple[List[str], List[List[str]]]:
-        header, data, errors = self.get_data_update_map()
-        if not header:
-            return [], []
-        if validate and errors:
+    def preview_update_data(self, validate: bool=False) -> CSVdata:
+        data = self.get_data_update_map()
+        if not data:
+            return None
+        if validate and data.errors:
             error_dialog(
                 self,
                 _('Invalid data to update'),
                 _('The table of updated values contain {} errors. Use "{}" to see the details of them.').format(
-                    len(errors),
+                    len(data.errors),
                     self.button_preview_data.text(),
                 ),
                 show=True,
                 show_copy_button=False,
             )
-            return [], []
+            return None
         
         fm = current_db().field_metadata
-        pre_header = [field_name(fm, h) for h in header]
+        pre_header = [field_name(fm, h) for h in data.header]
         pre_data = []
-        for row in data:
+        for row in data.rows:
             tbl = []
             pre_data.append(tbl)
             for value in row:
@@ -953,7 +948,11 @@ class UpdateCSVdialog(Dialog):
                     value = value.strip()
                 tbl.append(value)
         
-        rslt = ViewCSVdataDialog(pre_header, pre_data, errors=errors, has_reference=True, validate=validate, parent=self).exec()
-        if rslt != Dialog.DialogCode.Accepted:
-            return [], []
-        return header, data
+        d = ViewCSVdataDialog(
+            CSVdata(pre_header, pre_data, errors=data.errors, has_reference=True),
+            validate=validate,
+            parent=self,
+        ).exec()
+        if d != Dialog.DialogCode.Accepted or data.errors:
+            return None
+        return data
