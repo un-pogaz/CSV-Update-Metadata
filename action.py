@@ -323,7 +323,7 @@ def get_writable_fields() -> Set[str]:
     return {k for k in get_all_fields() if k not in excluded}
 
 
-def field_name(fm, field):
+def field_name(field: str, field_metadata: Dict) -> str:
     name = None
     if field == 'isbn':
         name = 'ISBN'
@@ -333,11 +333,11 @@ def field_name(fm, field):
         name = _('Library name')
     if field.endswith('_index'):
         field_serie = field[:-len('_index')]
-        name = fm.get(field_serie, {}).get('name')
+        name = field_metadata.get(field_serie, {}).get('name')
         if name:
             name = name + ' ' + _('Index')
     if not name:
-        name = fm[field].get('name') or field
+        name = field_metadata[field].get('name') or field
     return f'{name} ({field})'
 
 
@@ -375,11 +375,12 @@ def _series_with_index(x):
     return f'{x[0]} [{x[1]}]'
 
 
-def get_adapter(name, metadata, *, series_with_index=False):
+def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False):
     from calibre.db.write import get_adapter
     
     if name == 'isbn':
         return _parse_isbn
+    metadata = field_metadata[name]
     if metadata['datatype'] == 'series' and series_with_index:
         return _series_with_index
     return get_adapter(name, metadata)
@@ -502,7 +503,7 @@ class ExportCSVdialog(Dialog):
         fm = current_db().field_metadata
 
         def key_buider(field):
-            name = field_name(fm, field)
+            name = field_name(field, fm)
             return (sort_order.get(field, 1000), sort_key(name)), name, field
 
         self.list.clear()
@@ -704,14 +705,14 @@ class UpdateCSVdialog(Dialog):
         
         fm = current_db().field_metadata
         all_fields = dict(sorted(
-            ((n,field_name(fm, n)) for n in get_all_fields()),
+            ((n,field_name(n, fm)) for n in get_all_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         for n in ('library_name',):
             all_fields.pop(n, None)
         self.writable_fields = {'':''}
         self.writable_fields.update(sorted(
-            ((n,field_name(fm, n)) for n in get_writable_fields()),
+            ((n,field_name(n, fm)) for n in get_writable_fields()),
             key=lambda x:sort_key(x[1]),
         ))
         
@@ -856,7 +857,7 @@ class UpdateCSVdialog(Dialog):
                         _(
                             'The field {} is reference twice as destination for the updating, '
                             'and therefore cannot be reliably updated.'
-                        ).format(field_name(fm, k)),
+                        ).format(field_name(k, fm)),
                         show=True,
                         show_copy_button=False,
                     )
@@ -865,7 +866,7 @@ class UpdateCSVdialog(Dialog):
                 data_map.append(i)
         
         swi = self.series_include_index.isChecked()
-        adapters = [get_adapter(k, fm[k], series_with_index=swi) for k in header]
+        adapters = [get_adapter(k, fm, series_with_index=swi) for k in header]
         r, f, c = 0, 0, 0
         for r,row in enumerate(self.csv_data.rows):
             tbl = []
@@ -881,7 +882,7 @@ class UpdateCSVdialog(Dialog):
                         tbl.append(CSVdataError(
                             c, r,
                             self.csv_data.header[c],
-                            field_name(fm, header[f]),
+                            field_name(header[f], fm),
                             err,
                         ))
             if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
@@ -915,7 +916,7 @@ class UpdateCSVdialog(Dialog):
             return None
         
         fm = current_db().field_metadata
-        pre_header = [field_name(fm, h) for h in data.header]
+        pre_header = [field_name(h, fm) for h in data.header]
         pre_data = []
         for row in data.rows:
             tbl = []
