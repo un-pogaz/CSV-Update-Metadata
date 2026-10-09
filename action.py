@@ -14,7 +14,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Set
+from typing import Callable, Dict, List, Set
 
 try:
     from qt.core import (
@@ -22,7 +22,6 @@ try:
         QDialog,
         QFileDialog,
         QFormLayout,
-        QFrame,
         QHBoxLayout,
         QLabel,
         QListWidget,
@@ -46,7 +45,6 @@ except ImportError:
         QDialog,
         QFileDialog,
         QFormLayout,
-        QFrame,
         QHBoxLayout,
         QLabel,
         QListWidget,
@@ -375,7 +373,7 @@ def _series_with_index(x):
     return f'{x[0]} [{x[1]}]'
 
 
-def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False):
+def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> Callable:
     from calibre.db.write import get_adapter
     
     if name == 'isbn':
@@ -383,7 +381,15 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False):
     metadata = field_metadata[name]
     if metadata['datatype'] == 'series' and series_with_index:
         return _series_with_index
-    return get_adapter(name, metadata)
+    adapter = get_adapter(name, metadata)
+    def f(x):
+        rslt = adapter(x)
+        if isinstance(rslt, (list, tuple, dict)) and not rslt:
+            return None
+        if isinstance(rslt, datetime) and is_date_undefined(rslt):
+            return None
+        return rslt
+    return f
 
 
 def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CSVdata:
@@ -927,24 +933,15 @@ class UpdateCSVdialog(Dialog):
                 elif isinstance(value, (int, float, bool)):
                     value = str(value).lower()
                 elif isinstance(value, datetime):
-                    if is_date_undefined(value):
-                        value = 'NULL'
-                    else:
-                        value = value.isoformat(' ')
-                        value = value.replace('+00:00', '')
-                        value = value.replace('00:00:00', '')
+                    value = value.isoformat(' ')
+                    value = value.replace('+00:00', '')
+                    value = value.replace('00:00:00', '')
                 elif isinstance(value, (list, tuple)):
-                    if not value:
-                        value = 'NULL'
-                    else:
-                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                        value = sv.join(value)
+                    sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                    value = sv.join(value)
                 elif isinstance(value, dict):
-                    if not value:
-                        value = 'NULL'
-                    else:
-                        sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                        value = sv.join([f'{k}:{v}' for k,v in value])
+                    sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                    value = sv.join([f'{k}:{v}' for k,v in value])
                 if isinstance(value, str):
                     value = value.strip()
                 tbl.append(value)
