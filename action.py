@@ -14,6 +14,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from functools import lru_cache
 from typing import Callable, Dict, List, NamedTuple, Set
 
@@ -87,6 +88,11 @@ LIBRARY_PREFS.defaults['fields'] = ['id', 'authors', 'series', 'series_index', '
 LIBRARY_PREFS.defaults['series_with_index'] = False
 
 
+class MatchType(Enum):
+    insensitive_equal = _('Case insensitive equal')
+    strict_equal = _('Case sensitive equal')
+
+
 class CSV(csv.Dialect):
     delimiter = ','
     quotechar = '"'
@@ -115,6 +121,7 @@ class CSVdata(NamedTuple):
     has_reference: bool = False
     series_with_index: bool = False
     append_tags_value: bool = False
+    match_type: MatchType = MatchType.insensitive_equal
 
 
 class CSVformatDialog(Dialog):
@@ -615,17 +622,17 @@ class ViewCSVdataDialog(Dialog):
         self.setLayout(l)
         
         opt = []
+        if self.data.match_type:
+            opt.append(self.data.match_type._value_)
         if self.data.series_with_index:
             opt.append(SERIES_INCLUDE_INDEX)
         if self.data.append_tags_value:
             opt.append(APPEND_TAGS_VALUE)
         
         if opt:
-            fl = FlowLayout()
-            l.addLayout(fl)
-            fl.addWidget(QLabel('Update options:'))
-            for o in opt:
-                fl.addWidget(QLabel(o))
+            label = QLabel(_('Update options:')+' '+ ', '.join(opt))
+            label.setWordWrap(True)
+            l.addWidget(label)
         
         t = QTableWidget(self)
         t.setAlternatingRowColors(True)
@@ -759,9 +766,19 @@ class UpdateCSVdialog(Dialog):
         self.reference_field = KeyValueComboBox(all_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
         
+        self.match_type = KeyValueComboBox({e:e._value_ for e in MatchType.__members__.values()}, self)
+        self.match_type.setToolTip(
+            '<p>'+_('{}: Will match the complete value seeked, regardeless of the case. Calibre default behavior.')
+                .format(MatchType.insensitive_equal._value_)+
+            '<p>'+_('{}: Strictly match the value seeked, with taking account of the case.')
+                .format(MatchType.strict_equal._value_)+
+            ''
+        )
+        
         reference_selector = QFormLayout()
         reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
         reference_selector.addRow(_('Book field to match:'), self.reference_field)
+        reference_selector.addRow(_('Book match expresion:'), self.match_type)
         l.addLayout(reference_selector)
         
         fl = FlowLayout()
@@ -940,6 +957,7 @@ class UpdateCSVdialog(Dialog):
             errors=errors,
             series_with_index=self.series_include_index.isChecked(),
             append_tags_value=self.append_tags_value.isChecked(),
+            match_type=self.match_type.selected_key(),
         )
 
     def accept(self):
