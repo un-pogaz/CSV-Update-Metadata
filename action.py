@@ -15,7 +15,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
-from typing import Callable, Dict, List, Set
+from typing import Callable, Dict, List, NamedTuple, Set
 
 try:
     from qt.core import (
@@ -95,21 +95,20 @@ class CSV(csv.Dialect):
     quoting = csv.QUOTE_ALL
 
 
+@dataclass
 class CSVdataError:
-    def __init__(self, column: int, line: int, header: str, field: str, exc: Exception):
-        self.column = column
-        self.line = line
-        self.header = header
-        self.field = field
-        self.exc = exc
+    column: int
+    line: int
+    header: str
+    field: str
+    exc: Exception
     
     @property
     def exc_text(self):
         return f'{self.exc.__class__.__name__}: {self.exc}'
 
 
-@dataclass
-class CSVdata:
+class CSVdata(NamedTuple):
     header: List[str]
     rows: List[List[str]]
     errors: List[CSVdataError] = None
@@ -959,7 +958,7 @@ class UpdateCSVdialog(Dialog):
                 tbl.append(value)
         
         d = ViewCSVdataDialog(
-            CSVdata(pre_header, pre_data, errors=data.errors, has_reference=True),
+            data._replace(header=pre_header, rows=pre_data, has_reference=True),
             validate=validate,
             parent=self,
         ).exec()
