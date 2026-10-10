@@ -67,7 +67,7 @@ except ImportError:
 from calibre.constants import ismacos
 from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
-from calibre.gui2.widgets2 import Dialog, HTMLDisplay
+from calibre.gui2.widgets2 import Dialog, FlowLayout, HTMLDisplay
 from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import sort_key
 
@@ -114,6 +114,7 @@ class CSVdata(NamedTuple):
     errors: List[CSVdataError] = None
     has_reference: bool = False
     series_with_index: bool = False
+    append_tags_value: bool = False
 
 
 class CSVformatDialog(Dialog):
@@ -613,6 +614,19 @@ class ViewCSVdataDialog(Dialog):
         l = QVBoxLayout(self)
         self.setLayout(l)
         
+        opt = []
+        if self.data.series_with_index:
+            opt.append(SERIES_INCLUDE_INDEX)
+        if self.data.append_tags_value:
+            opt.append(APPEND_TAGS_VALUE)
+        
+        if opt:
+            fl = FlowLayout()
+            l.addLayout(fl)
+            fl.addWidget(QLabel('Update options:'))
+            for o in opt:
+                fl.addWidget(QLabel(o))
+        
         t = QTableWidget(self)
         t.setAlternatingRowColors(True)
         t.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -680,6 +694,10 @@ class ViewCSVdataDialog(Dialog):
             Dialog.reject(self)
 
 
+SERIES_INCLUDE_INDEX = _('Series-type fields include index')
+APPEND_TAGS_VALUE = _('Append value for tags-type fields')
+
+
 class UpdateCSVdialog(Dialog):
     def __init__(self, csv_path: str, data: CSVdata, parent=None):
         self.csv_path = csv_path
@@ -742,6 +760,15 @@ class UpdateCSVdialog(Dialog):
         reference_selector.addRow(_('Book field to match:'), self.reference_field)
         l.addLayout(reference_selector)
         
+        fl = FlowLayout()
+        l.addLayout(fl)
+        
+        self.series_include_index = QCheckBox(SERIES_INCLUDE_INDEX, self)
+        fl.addWidget(self.series_include_index)
+        
+        self.append_tags_value = QCheckBox(APPEND_TAGS_VALUE, self)
+        fl.addWidget(self.append_tags_value)
+        
         self.scroll = QScrollArea(self)
         l.addWidget(self.scroll)
         sc = QWidget()
@@ -749,9 +776,6 @@ class UpdateCSVdialog(Dialog):
         self.scroll.setWidgetResizable(True)
         layout = QVBoxLayout(self.scroll)
         sc.setLayout(layout)
-        
-        self.series_include_index = QCheckBox(_('Series-type fields include index'), self)
-        layout.addWidget(self.series_include_index)
         
         self.data_selector = QFormLayout()
         layout.addLayout(self.data_selector)
@@ -906,13 +930,18 @@ class UpdateCSVdialog(Dialog):
                 data.append(tbl)
                 errors.extend(e for e in tbl if isinstance(e, CSVdataError))
         
-        return CSVdata(header, data, errors=errors)
+        return CSVdata(
+            header,
+            data,
+            errors=errors,
+            series_with_index=self.series_include_index.isChecked(),
+            append_tags_value=self.append_tags_value.isChecked(),
+        )
 
     def accept(self):
         self.data = self.preview_update_data(validate=True)
         if not self.data or self.data.errors:
             return
-        self.data.series_with_index = self.series_include_index.isChecked()
         Dialog.accept(self)
 
     def preview_update_data(self, validate: bool=False) -> CSVdata:
