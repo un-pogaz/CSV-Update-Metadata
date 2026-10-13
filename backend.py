@@ -83,10 +83,23 @@ def get_all_fields() -> Set[str]:
     return rslt
 
 
+def get_seekable_fields() -> Set[str]:
+    db = current_db()
+    fm = db.field_metadata
+    rslt = get_all_fields()
+    exclude = set()
+    exclude.add('library_name')
+    for field in rslt:
+        if field in fm and fm[field]['datatype'] == 'datetime':
+            exclude.add(field)
+    return rslt.difference(exclude)
+
+
 def get_writable_fields() -> Set[str]:
-    all_fields = get_all_fields()
-    excluded = {'library_name', 'id', 'uuid', 'size', 'pages'}
-    return {k for k in get_all_fields() if k not in excluded}
+    rslt = get_all_fields()
+    for n in ('library_name', 'id', 'uuid', 'size', 'pages'):
+        rslt.discard(n)
+    return rslt
 
 
 def field_name(field: str, field_metadata: Dict) -> str:

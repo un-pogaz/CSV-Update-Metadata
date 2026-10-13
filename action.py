@@ -76,6 +76,7 @@ from .backend import (
     field_name,
     get_adapter,
     get_all_fields,
+    get_seekable_fields,
     get_writable_fields,
     load_csv_file,
     update_library_data,
@@ -558,12 +559,10 @@ class UpdateCSVdialog(Dialog):
         button_layout.addStretch()
         
         fm = current_db().field_metadata
-        all_fields = dict(sorted(
-            ((n,field_name(n, fm)) for n in get_all_fields()),
+        seekable_fields = dict(sorted(
+            ((n,field_name(n, fm)) for n in get_seekable_fields()),
             key=lambda x:sort_key(x[1]),
         ))
-        for n in ('library_name',):
-            all_fields.pop(n, None)
         self.writable_fields = {'':''}
         self.writable_fields.update(sorted(
             ((n,field_name(n, fm)) for n in get_writable_fields()),
@@ -571,7 +570,7 @@ class UpdateCSVdialog(Dialog):
         ))
         
         self.reference_header = NoWheelComboBox(self)
-        self.reference_field = KeyValueComboBox(all_fields, parent=self)
+        self.reference_field = KeyValueComboBox(seekable_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
         
         self.match_type = KeyValueComboBox({e:e._value_ for e in MatchType.__members__.values()}, self)
