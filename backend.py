@@ -16,8 +16,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, Dict, List, NamedTuple, Set
+from typing import Callable, Dict, List, NamedTuple, Set, Tuple, Union
 
+from calibre.db.cache import Cache
+from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField, OneToOneField, SeriesField
 from calibre.utils.date import is_date_undefined
 
 from .common_utils import CALIBRE_VERSION, current_db, debug_print
@@ -241,8 +243,47 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
+def _get_case_func(case_sensitive: bool) -> Tuple[Callable[[str], bytes], Callable[[str, str], int]]:
+    from calibre.utils.icu import case_sensitive_sort_key, case_sensitive_strcmp, sort_key, strcmp
+    
+    if case_sensitive:
+        return case_sensitive_sort_key, case_sensitive_strcmp
+    return sort_key, strcmp
+
+
+def _book_ids_identifiers(values: List[Dict[str, str]], field: IdentifiersField, case_sensitive: bool) -> List[List[int]]:
+    key, cmp = _get_case_func(case_sensitive)
+    rslt = []
+    for iden in values:
+        # map for this identifiers list
+        rslt_map = defaultdict(dict)
+        for k,v in iden.items():
+            rslt_map[k][key(v)] = []
+            all_ids = field.table.col_book_map[k]
+            for i in all_ids:
+                vv = field.table.book_col_map[i][k]
+                kk = key(vv)
+                if kk in rslt_map[k]:
+                    rslt_map[k][kk].append(i)
+        
+        # filter intersection
+        all_ids = set()
+        for v in rslt_map.values():
+            for vv in v.values():
+                all_ids.update(vv)
+        for v in rslt_map.values():
+            for vv in v.values():
+                if vv:
+                    all_ids.intersection_update(vv)
+        
+        rslt.append(sorted(all_ids))
+    return rslt
+
+
 def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
     db = current_db().new_api
+    
+    case_sensitive = match_type == MatchType.strict_equal
     
     if field == 'id':
         return [list(filter(db.has_id, (i,))) for i in values]
@@ -250,6 +291,13 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
         def f(x):
             return db.lookup_by_uuid(x.lower())
         return [list(filter(None, (u,))) for u in map(f, values)]
+    if field == 'isbn':
+        tbl = [{'isbn': v for v in values}]
+        return _book_ids_identifiers(tbl, db.fields['identifiers'], case_sensitive=case_sensitive)
+    
+    field_table = db.fields[field]
+    if isinstance(field_table, IdentifiersField):
+        return _book_ids_identifiers(values, field_table, case_sensitive=case_sensitive)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
