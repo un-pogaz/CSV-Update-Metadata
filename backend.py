@@ -242,7 +242,16 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
 
 
 def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
-    return NotImplemented
+    db = current_db().new_api
+    
+    if field == 'id':
+        return [list(filter(db.has_id, (i,))) for i in values]
+    if field == 'uuid':
+        def f(x):
+            return db.lookup_by_uuid(x.lower())
+        return [list(filter(None, (u,))) for u in map(f, values)]
+    
+    raise NotImplementedError(f'{field!r} is not supported.')
 
 
 def update_library_data(data: CSVdata):
