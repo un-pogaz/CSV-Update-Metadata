@@ -228,7 +228,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
-def get_book_ids(field: str, values: List, match_type: MatchType) -> List[List[int]]:
+def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
     return NotImplemented
 
 
@@ -241,5 +241,6 @@ def update_library_data(data: CSVdata):
         data.header[0],
         [r[0] for r in data.rows],
         data.match_type,
+        data.series_with_index,
     )
     # db.set_field(self, name, book_id_to_val_map, allow_case_change=True, do_path_update=True)
