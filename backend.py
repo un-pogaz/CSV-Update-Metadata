@@ -305,6 +305,21 @@ def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: b
     return rslt
 
 
+def _book_ids_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
+    field_table = db.fields[field]
+    if not isinstance(field_table, OneToOneField):
+        raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
+    
+    rslt = [[] for x in range(len(values))]
+    lst = set(values)
+    def f(x):
+        return x[1] in lst
+    
+    for k,v in filter(f, field_table.table.book_col_map.items()):
+        rslt[values.index(v)].append(k)
+    return rslt
+
+
 def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
     db = current_db().new_api
     
@@ -325,6 +340,12 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
         return _book_ids_identifiers(db, field, values, case_sensitive=case_sensitive)
     if isinstance(field_table, SeriesField):
         return _book_ids_series(db, field, values, case_sensitive=case_sensitive, series_with_index=series_with_index)
+    
+    fm = db.field_metadata[field]
+    dt = fm['datatype']
+    
+    if dt in {'int', 'float', 'bool'}:
+        return _book_ids_numeric(db, field, values)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
