@@ -280,6 +280,37 @@ def _book_ids_identifiers(values: List[Dict[str, str]], field: IdentifiersField,
     return rslt
 
 
+def _book_ids_series(
+    values: List[str],
+    db: Cache,
+    field: SeriesField,
+    index: OneToOneField,
+    case_sensitive: bool,
+    series_with_index: bool,
+) -> List[List[int]]:
+    indexs = []
+    if series_with_index:
+        indexs = [None for x in range(len(values))]
+        for i,v in enumerate(values):
+            sn, si = _split_series_with_index(v)
+            values[i] = sn
+            indexs[i] = si
+    
+    item_map = field.table.item_ids_for_names(db.backend, values, case_sensitive=case_sensitive)
+    rslt = []
+    for v in values:
+        item_ids = field.table.col_book_map.get(item_map[v])
+        rslt.append(sorted(item_ids or []))
+    if not series_with_index:
+        return rslt
+    
+    for i,v in enumerate(indexs):
+        def f(x):
+            return index.table.book_col_map[x] == v
+        rslt[i] = list(filter(f, rslt[i]))
+    return rslt
+
+
 def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
     db = current_db().new_api
     
@@ -298,6 +329,8 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
     field_table = db.fields[field]
     if isinstance(field_table, IdentifiersField):
         return _book_ids_identifiers(values, field_table, case_sensitive=case_sensitive)
+    if isinstance(field_table, SeriesField):
+        return _book_ids_series(values, field_table, case_sensitive=case_sensitive, series_with_index=series_with_index)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
