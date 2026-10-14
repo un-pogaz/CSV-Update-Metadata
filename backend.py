@@ -251,7 +251,8 @@ def _get_case_func(case_sensitive: bool) -> Tuple[Callable[[str], bytes], Callab
     return sort_key, strcmp
 
 
-def _book_ids_identifiers(values: List[Dict[str, str]], field: IdentifiersField, case_sensitive: bool) -> List[List[int]]:
+def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
+    field_table = db.fields[field]
     key, cmp = _get_case_func(case_sensitive)
     rslt = []
     for iden in values:
@@ -259,9 +260,9 @@ def _book_ids_identifiers(values: List[Dict[str, str]], field: IdentifiersField,
         rslt_map = defaultdict(dict)
         for k,v in iden.items():
             rslt_map[k][key(v)] = []
-            all_ids = field.table.col_book_map[k]
+            all_ids = field_table.table.col_book_map[k]
             for i in all_ids:
-                vv = field.table.book_col_map[i][k]
+                vv = field_table.table.book_col_map[i][k]
                 kk = key(vv)
                 if kk in rslt_map[k]:
                     rslt_map[k][kk].append(i)
@@ -280,14 +281,7 @@ def _book_ids_identifiers(values: List[Dict[str, str]], field: IdentifiersField,
     return rslt
 
 
-def _book_ids_series(
-    values: List[str],
-    db: Cache,
-    field: SeriesField,
-    index: OneToOneField,
-    case_sensitive: bool,
-    series_with_index: bool,
-) -> List[List[int]]:
+def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: bool, series_with_index: bool) -> List[List[int]]:
     indexs = []
     if series_with_index:
         indexs = [None for x in range(len(values))]
@@ -296,17 +290,17 @@ def _book_ids_series(
             values[i] = sn
             indexs[i] = si
     
-    item_map = field.table.item_ids_for_names(db.backend, values, case_sensitive=case_sensitive)
+    item_map = db.get_item_ids(field, values, case_sensitive=case_sensitive)
     rslt = []
     for v in values:
-        item_ids = field.table.col_book_map.get(item_map[v])
+        item_ids = db.books_for_field(field, item_map[v])
         rslt.append(sorted(item_ids or []))
     if not series_with_index:
         return rslt
     
     for i,v in enumerate(indexs):
         def f(x):
-            return index.table.book_col_map[x] == v
+            return db.field_for(f'{field}_index', x) == v
         rslt[i] = list(filter(f, rslt[i]))
     return rslt
 
@@ -324,13 +318,13 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
         return [list(filter(None, (u,))) for u in map(f, values)]
     if field == 'isbn':
         tbl = [{'isbn': v for v in values}]
-        return _book_ids_identifiers(tbl, db.fields['identifiers'], case_sensitive=case_sensitive)
+        return _book_ids_identifiers(db, 'identifiers', tbl, case_sensitive=case_sensitive)
     
     field_table = db.fields[field]
     if isinstance(field_table, IdentifiersField):
-        return _book_ids_identifiers(values, field_table, case_sensitive=case_sensitive)
+        return _book_ids_identifiers(db, field, values, case_sensitive=case_sensitive)
     if isinstance(field_table, SeriesField):
-        return _book_ids_series(values, field_table, case_sensitive=case_sensitive, series_with_index=series_with_index)
+        return _book_ids_series(db, field, values, case_sensitive=case_sensitive, series_with_index=series_with_index)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
