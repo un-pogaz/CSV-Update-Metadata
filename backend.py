@@ -73,7 +73,8 @@ def get_all_fields() -> Set[str]:
     from calibre.library.catalogs import FIELDS
     db = current_db()
     fm = db.field_metadata
-    rslt = {x for x in FIELDS if x not in {'all', 'ondevice', 'formats', 'cover'}}
+    rslt = set(FIELDS)
+    rslt.difference_update(('all', 'ondevice', 'formats', 'cover'))
     for field in db.custom_field_keys():
         if fm[field]['datatype'] == 'composite':
             continue
@@ -91,17 +92,20 @@ def get_seekable_fields() -> Set[str]:
     rslt = get_all_fields()
     exclude = set()
     exclude.add('library_name')
+    exclude.add('comments')
     for field in rslt:
-        if field in fm and fm[field]['datatype'] == 'datetime':
+        if field not in fm:
+            continue
+        if fm[field]['datatype'] == 'datetime':
+            exclude.add(field)
+        if fm[field]['datatype'] == 'comments' and fm[field]['display'].get('interpret_as') != 'short-text':
             exclude.add(field)
     return rslt.difference(exclude)
 
 
 def get_writable_fields() -> Set[str]:
     rslt = get_all_fields()
-    for n in ('library_name', 'id', 'uuid', 'size', 'pages'):
-        rslt.discard(n)
-    return rslt
+    return rslt.difference(('library_name', 'id', 'uuid', 'size', 'pages'))
 
 
 def field_name(field: str, field_metadata: Dict) -> str:
