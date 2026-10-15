@@ -297,11 +297,7 @@ def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: b
             values[i] = sn
             indexs[i] = si
     
-    item_map = db.get_item_ids(field, values, case_sensitive=case_sensitive)
-    rslt = []
-    for v in values:
-        item_ids = db.books_for_field(field, item_map[v])
-        rslt.append(sorted(item_ids or []))
+    rslt = _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
     if not series_with_index:
         return rslt
     
@@ -324,6 +320,38 @@ def _book_ids_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
     
     for k,v in filter(f, field_table.table.book_col_map.items()):
         rslt[values.index(v)].append(k)
+    return rslt
+
+
+def _book_ids_text(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
+    field_table = db.fields[field]
+    if not isinstance(field_table, OneToOneField):
+        raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
+    
+    key, cmp = _get_case_func(case_sensitive)
+    rslt = [[] for x in range(len(values))]
+    lst = {key(v) for v in values}
+    def f(x):
+        return key(x[1]) in lst
+    
+    for k,v in filter(f, field_table.table.book_col_map.items()):
+        rslt[values.index(v)].append(k)
+    return rslt
+
+
+def _book_ids_many_one_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
+    return _book_ids_many_one_text(db, field, values, case_sensitive=False)
+
+
+def _book_ids_many_one_text(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
+    if not isinstance(db.fields[field], ManyToOneField):
+        raise TypeError(f'Target field {field!r} is not a {ManyToOneField.__name__!r}')
+    
+    item_map = db.get_item_ids(field, values, case_sensitive=case_sensitive)
+    rslt = []
+    for v in values:
+        item_ids = db.books_for_field(field, item_map[v])
+        rslt.append(sorted(item_ids or []))
     return rslt
 
 
@@ -353,6 +381,17 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
     
     if dt in {'int', 'float', 'bool'}:
         return _book_ids_numeric(db, field, values)
+    
+    if dt in {'rating'}:
+        return _book_ids_many_one_numeric(db, field, values)
+    if dt in {'enumeration'}:
+        return _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
+    
+    if dt == 'text':
+        if isinstance(field_table, ManyToOneField):
+            return _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
+        if isinstance(field_table, OneToOneField):
+            return _book_ids_text(db, field, values, case_sensitive=case_sensitive)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
