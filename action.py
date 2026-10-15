@@ -244,7 +244,7 @@ class UpdateDataProgress(QProgressDialog):
         self.setMinimumDuration(100)
         self.setWindowIcon(get_icon(PLUGIN_ICON))
         self.setWindowTitle(_('Updating data from CSV'))
-        self.setLabelText('Updating Library…')
+        self.setLabelText(_('Updating Library…'))
         self.setValue(-1)
         self.show()
         QTimer.singleShot(1, self.run_job)
