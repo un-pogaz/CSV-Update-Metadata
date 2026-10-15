@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, Dict, List, NamedTuple, Set, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Set, Tuple
 
 from calibre.db.cache import Cache
 from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField, OneToOneField, SeriesField
@@ -257,6 +257,9 @@ def _get_case_func(case_sensitive: bool) -> Tuple[Callable[[str], bytes], Callab
 
 def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
+    if not isinstance(field_table, IdentifiersField):
+        raise TypeError(f'Target field to seek is not a {IdentifiersField.__name__!r}')
+    
     key, cmp = _get_case_func(case_sensitive)
     rslt = []
     for iden in values:
