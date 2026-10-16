@@ -140,6 +140,9 @@ def _parse_isbn(x):
     return rslt
 
 
+series_index_pat = re.compile(r'(.+)\s+\[([0-9]+(\.[0-9]+))\]')
+
+
 def _split_series_with_index(x):
     from calibre.db.write import adapt_series_index, single_text
     
@@ -147,7 +150,7 @@ def _split_series_with_index(x):
     if not x:
         return None
     
-    m = re.fullmatch(r'(.+)\s+\[(\d+(\.\d+))\]', x)
+    m = series_index_pat.fullmatch(x)
     if not m:
         raise ValueError(f'invalid value for series with index: {x!r}')
     return m.group(1), adapt_series_index(m.group(2))
