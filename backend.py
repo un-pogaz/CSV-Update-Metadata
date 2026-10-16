@@ -316,10 +316,16 @@ def _book_ids_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
     if not isinstance(field_table, OneToOneField):
         raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
     
+    if field == 'series_index':
+        bcm = db.fields['series'].table.book_col_map
+        def f(kv):
+            return kv[0] in bcm and kv[1] in lst
+    else:
+        def f(kv):
+            return kv[1] in lst
+    
     rslt = [[] for x in range(len(values))]
     lst = set(values)
-    def f(x):
-        return x[1] in lst
     
     for k,v in filter(f, field_table.table.book_col_map.items()):
         rslt[values.index(v)].append(k)
