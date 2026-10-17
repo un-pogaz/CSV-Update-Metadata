@@ -16,11 +16,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, Dict, List, NamedTuple, Set, Tuple
+from typing import Callable, Dict, List, NamedTuple, Set
 
 from calibre.db.cache import Cache
 from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField, OneToOneField, SeriesField
 from calibre.utils.date import is_date_undefined
+from calibre.utils.icu import lower as icu_lower
 
 from .common_utils import CALIBRE_VERSION, current_db, debug_print
 
@@ -250,20 +251,12 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
-def _get_case_func(case_sensitive: bool) -> Tuple[Callable[[str], bytes], Callable[[str, str], int]]:
-    from calibre.utils.icu import case_sensitive_sort_key, case_sensitive_strcmp, sort_key, strcmp
-    
-    if case_sensitive:
-        return case_sensitive_sort_key, case_sensitive_strcmp
-    return sort_key, strcmp
-
-
 def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
     if not isinstance(field_table, IdentifiersField):
         raise TypeError(f'Target field to seek is not a {IdentifiersField.__name__!r}')
     
-    key, cmp = _get_case_func(case_sensitive)
+    key = (lambda x:x) if case_sensitive else icu_lower
     rslt = []
     for iden in values:
         # map for this identifiers list
@@ -300,7 +293,7 @@ def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: b
             values[i] = sn
             indexs[i] = si
     
-    rslt = _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
+    rslt = _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
     if not series_with_index:
         return rslt
     
@@ -311,48 +304,31 @@ def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: b
     return rslt
 
 
-def _book_ids_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
+def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
     if not isinstance(field_table, OneToOneField):
         raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
+    
+    key = (lambda x:x) if case_sensitive else icu_lower
+    # registre the values
+    value_map = {}
+    for v in values:
+        value_map[key(v)] = []
     
     if field == 'series_index':
         bcm = db.fields['series'].table.book_col_map
         def f(kv):
-            return kv[0] in bcm and kv[1] in lst
+            return kv[0] in bcm and key(kv[1]) in value_map
     else:
         def f(kv):
-            return kv[1] in lst
-    
-    rslt = [[] for x in range(len(values))]
-    lst = set(values)
+            return key(kv[1]) in value_map
     
     for k,v in filter(f, field_table.table.book_col_map.items()):
-        rslt[values.index(v)].append(k)
-    return rslt
+        value_map[key(v)].append(k)
+    return [sorted(value_map[key(v)]) for v in values]
 
 
-def _book_ids_text(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
-    field_table = db.fields[field]
-    if not isinstance(field_table, OneToOneField):
-        raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
-    
-    key, cmp = _get_case_func(case_sensitive)
-    rslt = [[] for x in range(len(values))]
-    lst = {key(v) for v in values}
-    def f(x):
-        return key(x[1]) in lst
-    
-    for k,v in filter(f, field_table.table.book_col_map.items()):
-        rslt[values.index(v)].append(k)
-    return rslt
-
-
-def _book_ids_many_one_numeric(db: Cache, field: str, values: List) -> List[List[int]]:
-    return _book_ids_many_one_text(db, field, values, case_sensitive=False)
-
-
-def _book_ids_many_one_text(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
+def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
     if not isinstance(db.fields[field], ManyToOneField):
         raise TypeError(f'Target field {field!r} is not a {ManyToOneField.__name__!r}')
     
@@ -389,18 +365,18 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
     dt = fm['datatype']
     
     if dt in {'int', 'float', 'bool'}:
-        return _book_ids_numeric(db, field, values)
+        return _book_ids_one_one(db, field, values, case_sensitive=True)
     
     if dt in {'rating'}:
-        return _book_ids_many_one_numeric(db, field, values)
+        return _book_ids_many_one(db, field, values, case_sensitive=True)
     if dt in {'enumeration'}:
-        return _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
+        return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
     
     if dt == 'text':
         if isinstance(field_table, ManyToOneField):
-            return _book_ids_many_one_text(db, field, values, case_sensitive=case_sensitive)
+            return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
         if isinstance(field_table, OneToOneField):
-            return _book_ids_text(db, field, values, case_sensitive=case_sensitive)
+            return _book_ids_one_one(db, field, values, case_sensitive=case_sensitive)
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
