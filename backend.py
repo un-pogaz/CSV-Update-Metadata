@@ -57,7 +57,7 @@ class MatchType(Enum):
             # ),
             MatchType.search: (
                 _('Calibre search'),
-                _('{}: Uses the Calibre search engine.'),
+                _('{}: Uses the Calibre search engine. No book field to match is required for this mode.'),
             ),
         }
     
@@ -151,6 +151,8 @@ def get_writable_fields() -> Set[str]:
 
 
 def field_name(field: str, field_metadata: Dict) -> str:
+    if field == MatchType.search:
+        return MatchType.search.label
     name = None
     if field == 'isbn':
         name = 'ISBN'
@@ -214,6 +216,9 @@ def unknown_author():
 
 def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> Callable:
     from calibre.db.write import get_adapter
+    
+    if name == MatchType.search:
+        return lambda x:x
     
     if name == 'isbn':
         return _parse_isbn

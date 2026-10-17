@@ -590,12 +590,14 @@ class UpdateCSVdialog(Dialog):
         
         self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
         self.match_type.setToolTip('\n'.join('<p>' + e.description for e in MatchType.__members__.values()))
+        self.match_type.currentIndexChanged.connect(self.match_type_changed)
         
-        reference_selector = QFormLayout()
-        reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
-        reference_selector.addRow(_('Book field to match:'), self.reference_field)
-        reference_selector.addRow(_('Book match expresion:'), self.match_type)
-        l.addLayout(reference_selector)
+        self.reference_selector = rs = QFormLayout()
+        rs.addRow(_('CSV column to seek:'), self.reference_header)
+        rs.addRow(_('Book field to match:'), self.reference_field)
+        self.reference_field_row = rs.rowCount()-1
+        rs.addRow(_('Book match expresion:'), self.match_type)
+        l.addLayout(rs)
         
         fl = FlowLayout()
         l.addLayout(fl)
@@ -687,6 +689,10 @@ class UpdateCSVdialog(Dialog):
     def preview_data(self):
         self.preview_update_data(validate=False)
 
+    def match_type_changed(self, idx):
+        hide = self.match_type.selected_key() != MatchType.search
+        self.reference_selector.setRowVisible(self.reference_field_row, hide)
+
     def get_data_update_map(self) -> CSVdata:
         if not self.csv_data.header or not self.csv_data.rows:
             error_dialog(
@@ -707,7 +713,7 @@ class UpdateCSVdialog(Dialog):
                 show_copy_button=False,
             )
             return None
-        if self.reference_field.currentIndex() == -1:
+        if self.reference_field.currentIndex() == -1 and self.match_type.selected_key() != MatchType.search:
             error_dialog(
                 self,
                 _('No reference field selected'),
@@ -723,7 +729,11 @@ class UpdateCSVdialog(Dialog):
         data_map = []
         
         data_map.append(self.reference_header.currentIndex())
-        header.append(self.reference_field.selected_key())
+        if self.match_type.selected_key() == MatchType.search:
+            field = MatchType.search
+        else:
+            field = self.reference_field.selected_key()
+        header.append(field)
         
         for i,w in self.csv_widget.items():
             if k := w.selected_key():
