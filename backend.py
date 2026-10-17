@@ -212,6 +212,9 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CS
     with open(csv_path, newline='', encoding='utf-8') as f:
         raw = list(csv.reader(f, CSV))
     
+    if not raw:
+        raise ValueError(_('The input CSV is empty.'))
+    
     header = raw[0]
     data = raw[1:]
     
@@ -252,12 +255,16 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
+def _get_case_sensitive(case_sensitive: bool):
+    return (lambda x:x) if case_sensitive else icu_lower
+
+
 def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
     if not isinstance(field_table, IdentifiersField):
         raise TypeError(f'Target field to seek is not a {IdentifiersField.__name__!r}')
     
-    key = (lambda x:x) if case_sensitive else icu_lower
+    key = _get_case_sensitive(case_sensitive)
     rslt = []
     for iden in values:
         # map for this identifiers list
@@ -310,7 +317,7 @@ def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: 
     if not isinstance(field_table, OneToOneField):
         raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
     
-    key = (lambda x:x) if case_sensitive else icu_lower
+    key = _get_case_sensitive(case_sensitive)
     # registre the values
     value_map = {}
     for v in values:
