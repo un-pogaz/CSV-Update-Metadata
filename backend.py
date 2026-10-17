@@ -60,14 +60,30 @@ class CSVdataError:
         return f'{self.exc.__class__.__name__}: {self.exc}'
 
 
+class OptionsUpdate(NamedTuple):
+    series_with_index: bool = False
+    tags_contain_value: bool = False
+    append_tags_value: bool = False
+    
+    @staticmethod
+    def _data() -> Dict[str, str]:
+        return {
+            'series_with_index': _('Series-type fields include index'),
+            'tags_contain_value': _('Tags-type contain the values'),
+            'append_tags_value': _('Append value for tags-type fields'),
+        }
+    
+    @staticmethod
+    def items() -> List[Tuple[str, str]]:
+        yield from OptionsUpdate._data().items()
+
+
 class CSVdata(NamedTuple):
     header: List[str]
     rows: List[List[str]]
     errors: List[CSVdataError] = None
     has_reference: bool = False
-    series_with_index: bool = False
-    tags_contain_value: bool = False
-    append_tags_value: bool = False
+    options: OptionsUpdate = OptionsUpdate()
     match_type: MatchType = MatchType.insensitive_equal
 
 
@@ -348,7 +364,7 @@ def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive:
     return rslt
 
 
-def get_book_ids(field: str, values: List, match_type: MatchType, series_with_index: bool) -> List[List[int]]:
+def get_book_ids(field: str, values: List, match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
     db = current_db().new_api
     
     case_sensitive = match_type == MatchType.strict_equal
@@ -367,7 +383,7 @@ def get_book_ids(field: str, values: List, match_type: MatchType, series_with_in
     if isinstance(field_table, IdentifiersField):
         return _book_ids_identifiers(db, field, values, case_sensitive=case_sensitive)
     if isinstance(field_table, SeriesField):
-        return _book_ids_series(db, field, values, case_sensitive=case_sensitive, series_with_index=series_with_index)
+        return _book_ids_series(db, field, values, case_sensitive=case_sensitive, series_with_index=options.series_with_index)
     
     fm = db.field_metadata[field]
     dt = fm['datatype']
@@ -398,6 +414,6 @@ def update_library_data(data: CSVdata):
         data.header[0],
         [r[0] for r in data.rows],
         data.match_type,
-        data.series_with_index,
+        data.options,
     )
     # db.set_field(self, name, book_id_to_val_map, allow_case_change=True, do_path_update=True)
