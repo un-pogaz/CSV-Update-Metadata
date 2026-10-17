@@ -14,9 +14,9 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import Enum, auto
 from functools import lru_cache
-from typing import Callable, Dict, List, NamedTuple, Set
+from typing import Callable, Dict, List, NamedTuple, Set, Tuple
 
 from calibre.db.cache import Cache
 from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField, OneToOneField, SeriesField
@@ -35,16 +35,40 @@ class CSV(csv.Dialect):
 
 
 class MatchType(Enum):
-    insensitive_equal = _('Case insensitive equal')
-    strict_equal = _('Case sensitive equal')
-
-
-MATCHTYPE_TOOLTIP = '\n'.join((
-    '<p>'+_('{}: Will match the complete value seeked, regardeless of the case. Calibre default behavior.')
-        .format(MatchType.insensitive_equal._value_),
-    '<p>'+_('{}: Strictly match the value seeked, with taking account of the case.')
-        .format(MatchType.strict_equal._value_),
-))
+    insensitive_equal = auto()
+    strict_equal = auto()
+    # TODO: regex = auto()
+    search = auto()
+    
+    @staticmethod
+    def _data() -> Dict['MatchType', Tuple[str, str]]:
+        return {
+            MatchType.insensitive_equal: (
+                _('Case insensitive equal'),
+                _('{}: Will match the complete value seeked, regardeless of the case. Calibre default behavior.'),
+            ),
+            MatchType.strict_equal: (
+                _('Case sensitive equal'),
+                _('{}: Strictly match the value seeked, with taking account of the case.'),
+            ),
+            # MatchType.regex: (
+            #     _('Regular expressions'),
+            #     _('{}: Uses case sensitive Python regular expressions.'),
+            # ),
+            MatchType.search: (
+                _('Calibre search'),
+                _('{}: Uses the Calibre search engine.'),
+            ),
+        }
+    
+    @property
+    def label(self) -> str:
+        return MatchType._data()[self][0]
+    
+    @property
+    def description(self) -> str:
+        name, value = MatchType._data()[self]
+        return value.format(name)
 
 
 @dataclass

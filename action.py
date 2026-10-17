@@ -68,7 +68,6 @@ from calibre.utils.icu import sort_key
 
 from .backend import (
     CSV,
-    MATCHTYPE_TOOLTIP,
     CSVdata,
     CSVdataError,
     MatchType,
@@ -453,7 +452,7 @@ class ViewCSVdataDialog(Dialog):
         
         opt = []
         if self.data.match_type:
-            opt.append(self.data.match_type._value_)
+            opt.append(self.data.match_type.label)
         for k,v in OptionsUpdate.items():
             if getattr(self.data.options, k):
                 opt.append(v)
@@ -589,8 +588,8 @@ class UpdateCSVdialog(Dialog):
         self.reference_field = KeyValueComboBox(seekable_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
         
-        self.match_type = KeyValueComboBox({e:e._value_ for e in MatchType.__members__.values()}, self)
-        self.match_type.setToolTip(MATCHTYPE_TOOLTIP)
+        self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
+        self.match_type.setToolTip('\n'.join('<p>' + e.description for e in MatchType.__members__.values()))
         
         reference_selector = QFormLayout()
         reference_selector.addRow(_('CSV column to seek:'), self.reference_header)
