@@ -45,19 +45,20 @@ class MatchType(Enum):
         return {
             MatchType.insensitive_equal: (
                 _('Case insensitive equal'),
-                _('{}: Will match the complete value seeked, regardeless of the case. Calibre default behavior.'),
+                _('Will match the complete seeked value, regardeless of the case. Calibre default behavior.'),
             ),
             MatchType.strict_equal: (
                 _('Case sensitive equal'),
-                _('{}: Strictly match the value seeked, with taking account of the case.'),
+                _('Strictly match the seeked value, with taking account of the case.'),
             ),
             # MatchType.regex: (
             #     _('Regular expressions'),
-            #     _('{}: Uses case sensitive Python regular expressions.'),
+            #     _('Uses <a href="{}">Python regular expressions</a>.')
+            #     .format('https://docs.python.org/library/re.html#regular-expression-syntax'),
             # ),
             MatchType.search: (
                 _('Calibre search'),
-                _('{}: Uses the Calibre search engine. No book field to match is required for this mode.'),
+                _('Uses the Calibre search engine. No book field to match is required for this mode.'),
             ),
         }
     
@@ -67,8 +68,7 @@ class MatchType(Enum):
     
     @property
     def description(self) -> str:
-        name, value = MatchType._data()[self]
-        return value.format(name)
+        return MatchType._data()[self][1]
 
 
 @dataclass
@@ -85,21 +85,52 @@ class CSVdataError:
 
 
 class OptionsUpdate(NamedTuple):
+    class Item(NamedTuple):
+        label: str
+        description: str
+    
     series_with_index: bool = False
     tags_contain_value: bool = False
     append_tags_value: bool = False
+    dont_change_case: bool = False
     
     @staticmethod
-    def _data() -> Dict[str, str]:
+    def _data() -> Dict[str, Item]:
         return {
-            'series_with_index': _('Series-type fields include index'),
-            'tags_contain_value': _('Tags-type contain the values'),
-            'append_tags_value': _('Append value for tags-type fields'),
+            'series_with_index': OptionsUpdate.Item(
+                _('Series-type fields include index'),
+                _('The value contain both the series name and the series index with the Calibre format "{}".')
+                .format(_('&lt;Series name&gt; [&lt;Index&gt;]')),
+            ),
+            'tags_contain_value': OptionsUpdate.Item(
+                _('Tags-type contain the values'),
+                _('When the plugin seek matching values on a Tags-type field, by default it only match books that have '
+                'the <i>exact</i> same collection of values than the one in the CSV. This option allow to match any book '
+                'that contain the seeked value, regardeless if the book have more values, instead of the exact collection.<br>'
+                'For example, the CSV value "green, blue" will macth any book with the same value, but also "green, blue, red".'),
+            ),
+            'append_tags_value': OptionsUpdate.Item(
+                _('Append value for tags-type fields'),
+                _('By default, the plugin completely replace the values of the tags-type fields by the one provide in the CSV. '
+                'This option allow to merge the CSV value to the one inside the library.'),
+            ),
+            'dont_change_case': OptionsUpdate.Item(
+                _('Do not change the case if existing'),
+                _('When updating a value that it similar to a value already existing in the library, '
+                'if the values are textualy the same but only the case is different, by default '
+                'the plugin will replace the case of the library value by the one in the CSV. '
+                'This option have to purpose to preserve the case of the libray version '
+                'of the value instead to use the CSV one.'),
+            ),
         }
     
     @staticmethod
-    def items() -> List[Tuple[str, str]]:
+    def items() -> List[Tuple[str, Item]]:
         yield from OptionsUpdate._data().items()
+    
+    @staticmethod
+    def values() -> List[Item]:
+        yield from OptionsUpdate._data().values()
 
 
 class CSVdata(NamedTuple):

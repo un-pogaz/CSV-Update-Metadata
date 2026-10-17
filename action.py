@@ -118,6 +118,8 @@ class HtmlInfoDialog(Dialog):
         self.rslt = []
         self.setup_html()
         self.body.setHtml('\n'.join(self.rslt))
+        self.body.setOpenLinks(True)
+        self.body.setOpenExternalLinks(True)
     
     def setup_html(self):
         return NotImplemented
@@ -175,6 +177,29 @@ class CSVformatDialog(HtmlInfoDialog):
         self.append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
         self.append('pre', csv_code)
+
+
+class UpdateOptionHelp(HtmlInfoDialog):
+    title = _('Update option help')
+    header = _('Update option')
+    icon = 'dialog_information.png'
+    
+    def setup_html(self):
+        self.append('p', _('Empty cell value will be skipped (no edit action).'))
+        self.append('p', _('The cell with the special keyword "NULL" (full case) will <i>delete</i> the value.'))
+        self.append('hr', '')
+        self.append('p', _('To update the metadata, you need to specified wich columns of CSV values the plugin need '
+                        'to seek in the library, and wich field this values need to match, depending of several mode:'))
+        self.append('', self.list_builder(*(
+            _('<b>{}</b>: {}').format(e.label, e.description) for e in MatchType.__members__.values()
+        )))
+        self.append('p', _('If the cell of the seeked value is empty, the line is ignored.'))
+        self.append('hr', '')
+        self.append('p', _('The following options allow to control how to update some specific field. '
+                        'Note that these options are global and are apply to the entire file.'))
+        self.append('', self.list_builder(*(
+            _('<b>{}</b>: {}').format(e.label, e.description) for e in OptionsUpdate.values()
+        )))
 
 
 class CSVMetadataAction(InterfaceAction):
@@ -455,7 +480,7 @@ class ViewCSVdataDialog(Dialog):
             opt.append(self.data.match_type.label)
         for k,v in OptionsUpdate.items():
             if getattr(self.data.options, k):
-                opt.append(v)
+                opt.append(v.label)
         
         if opt:
             label = QLabel(_('Update options:')+' '+ ', '.join(opt))
@@ -568,7 +593,12 @@ class UpdateCSVdialog(Dialog):
         self.button_reload_data.setToolTip(_('Reload the content from the CSV file.'))
         self.button_reload_data.clicked.connect(self.reload_data)
         
+        self.button_show_help = QPushButton(get_icon('dialog_information.png'), '', self)
+        self.button_show_help.setToolTip(_('Show the help about the options and the update policies.'))
+        self.button_show_help.clicked.connect(self.show_option_help)
+        
         button_layout.addStretch()
+        button_layout.addWidget(self.button_show_help)
         button_layout.addWidget(self.button_raw_data)
         button_layout.addWidget(self.button_reload_data)
         button_layout.addStretch()
@@ -589,14 +619,13 @@ class UpdateCSVdialog(Dialog):
         self.reference_field.setCurrentIndex(-1)
         
         self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
-        self.match_type.setToolTip('\n'.join('<p>' + e.description for e in MatchType.__members__.values()))
         self.match_type.currentIndexChanged.connect(self.match_type_changed)
         
         self.reference_selector = rs = QFormLayout()
         rs.addRow(_('CSV column to seek:'), self.reference_header)
         rs.addRow(_('Book field to match:'), self.reference_field)
         self.reference_field_row = rs.rowCount()-1
-        rs.addRow(_('Book match expresion:'), self.match_type)
+        rs.addRow(_('Book match mode:'), self.match_type)
         l.addLayout(rs)
         
         fl = FlowLayout()
@@ -604,7 +633,7 @@ class UpdateCSVdialog(Dialog):
         
         self.options = {}
         for k,v in OptionsUpdate.items():
-            self.options[k] = w = QCheckBox(v, self)
+            self.options[k] = w = QCheckBox(v.label, self)
             fl.addWidget(w)
         
         self.scroll = QScrollArea(self)
@@ -688,6 +717,9 @@ class UpdateCSVdialog(Dialog):
 
     def preview_data(self):
         self.preview_update_data(validate=False)
+
+    def show_option_help(self):
+        UpdateOptionHelp(self).exec()
 
     def match_type_changed(self, idx):
         hide = self.match_type.selected_key() != MatchType.search
