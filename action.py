@@ -152,20 +152,20 @@ class CSVformatDialog(HtmlInfoDialog):
                       'A CSV file stores tabular data in plain text. Each line of the file is a data record. '
                       'Each record consists of one or more values, separated by commas. '
                       'The use of the comma as a value separator is the source of the name for this file format.'))
-        self.append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, '
-                      'but this plugin can tolerate some of such difference as input.'))
-        self.append('p', _('The CSV format supported by the plugin is the following:'))
+        self.append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different '
+                        'CSV file, but this plugin can tolerate some of such difference as input.'))
+        self.append('p', _('The CSV format prefered by the plugin is the following:'))
         self.append('', self.list_builder(
-            _('The entire file must be "saved" in the Unicode (UTF-8) character set.'),
+            _('The entire file must be saved in the Unicode (UTF-8) encoding.'),
             _('The value delimiter (column separator) must be a single comma (not tab-separated or fixed width).'),
             _('The CSV require at least two columns.'),
             _('The CSV require at least two rows/lines:')+'\n'+self.list_builder(
-                _('The first row must be a "header" row which contains the double-quoted unique textual name of each column.'),
+                _('The first row must be a "header" row which contains the double-quoted textual name of each column.'),
                 _('All rows after the first row must contain either textual values or empty within each and every column.'),
                 _('All rows must have the same number of double-quoted textual columns as the "header" row.'),
             ),
             _('All values should preferably be double-quoted.')+'\n'+self.list_builder(
-                _('To include a double-quote character inside a value, write two double-quote consecutively "".'),
+                _('To include a double-quote character inside a value, write two double-quote consecutively <code>""</code>.'),
             ),
             _('Leading and trailing spaces will be removed from each value automatically.'),
             _('Empty value will be skipped (no edit action).'),
