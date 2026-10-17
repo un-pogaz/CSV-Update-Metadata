@@ -66,6 +66,7 @@ class CSVdata(NamedTuple):
     errors: List[CSVdataError] = None
     has_reference: bool = False
     series_with_index: bool = False
+    tags_contain_value: bool = False
     append_tags_value: bool = False
     match_type: MatchType = MatchType.insensitive_equal
 

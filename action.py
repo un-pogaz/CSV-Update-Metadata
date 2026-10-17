@@ -11,7 +11,7 @@ except NameError:
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, NamedTuple
 
 try:
     from qt.core import (
@@ -95,6 +95,29 @@ LIBRARY_PREFS = PREFS_library()
 LIBRARY_PREFS.defaults['sort_order'] = {'id':0, 'authors':1, 'series':2, 'series_index':3, 'title':4}
 LIBRARY_PREFS.defaults['fields'] = ['id', 'authors', 'series', 'series_index', 'title']
 LIBRARY_PREFS.defaults['series_with_index'] = False
+
+
+class Options:
+    class Item(NamedTuple):
+        label: str
+        key: str = None
+    
+    series_with_index = Item(_('Series-type fields include index'))
+    tags_contain_value = Item(_('Tags-type contain the values'))
+    append_tags_value = Item(_('Append value for tags-type fields'))
+    
+    @staticmethod
+    def values() -> List[Item]:
+        for v in Options.__dict__.values():
+            if not isinstance(v, Options.Item):
+                continue
+            yield v
+
+
+for k,v in Options.__dict__.items():
+    if not isinstance(v, Options.Item):
+        continue
+    setattr(Options, k, v._replace(key=k))
 
 
 class CSVformatDialog(Dialog):
@@ -433,10 +456,9 @@ class ViewCSVdataDialog(Dialog):
         opt = []
         if self.data.match_type:
             opt.append(self.data.match_type._value_)
-        if self.data.series_with_index:
-            opt.append(SERIES_INCLUDE_INDEX)
-        if self.data.append_tags_value:
-            opt.append(APPEND_TAGS_VALUE)
+        for v in Options.values():
+            if getattr(self.data, v.key):
+                opt.append(v.label)
         
         if opt:
             label = QLabel(_('Update options:')+' '+ ', '.join(opt))
@@ -514,10 +536,6 @@ class ViewCSVdataDialog(Dialog):
             Dialog.reject(self)
 
 
-SERIES_INCLUDE_INDEX = _('Series-type fields include index')
-APPEND_TAGS_VALUE = _('Append value for tags-type fields')
-
-
 class UpdateCSVdialog(Dialog):
     def __init__(self, csv_path: str, data: CSVdata, parent=None):
         self.csv_path = csv_path
@@ -585,11 +603,10 @@ class UpdateCSVdialog(Dialog):
         fl = FlowLayout()
         l.addLayout(fl)
         
-        self.series_include_index = QCheckBox(SERIES_INCLUDE_INDEX, self)
-        fl.addWidget(self.series_include_index)
-        
-        self.append_tags_value = QCheckBox(APPEND_TAGS_VALUE, self)
-        fl.addWidget(self.append_tags_value)
+        self.options = {}
+        for v in Options.values():
+            self.options[v.key] = w = QCheckBox(v.label, self)
+            fl.addWidget(w)
         
         self.scroll = QScrollArea(self)
         l.addWidget(self.scroll)
@@ -728,7 +745,7 @@ class UpdateCSVdialog(Dialog):
                 header.append(k)
                 data_map.append(i)
         
-        swi = self.series_include_index.isChecked()
+        swi = self.options[Options.series_with_index.key].isChecked()
         adapters = [get_adapter(k, fm, series_with_index=swi) for k in header]
         r, f, c = 0, 0, 0
         for r,row in enumerate(self.csv_data.rows):
@@ -752,13 +769,13 @@ class UpdateCSVdialog(Dialog):
                 data.append(tbl)
                 errors.extend(e for e in tbl if isinstance(e, CSVdataError))
         
+        options = {k:v.isChecked() for k,v in self.options.items()}
         return CSVdata(
             header,
             data,
             errors=errors,
-            series_with_index=self.series_include_index.isChecked(),
-            append_tags_value=self.append_tags_value.isChecked(),
             match_type=self.match_type.selected_key(),
+            **options,
         )
 
     def accept(self):
