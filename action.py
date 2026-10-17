@@ -120,64 +120,84 @@ for k,v in Options.__dict__.items():
     setattr(Options, k, v._replace(key=k))
 
 
-class CSVformatDialog(Dialog):
+class HtmlInfoDialog(Dialog):
+    title: str
+    header: str
+    icon: str = PLUGIN_ICON
+    
     def __init__(self, parent=None):
         Dialog.__init__(self,
-            title=_('CSV Format info'),
-            name='plugin.CSVMetadata:CSVformatDialog',
+            title=self.title,
+            name='plugin.CSVMetadata:'+self.__class__.__name__,
             parent=parent,
         )
-
+    
     def setup_ui(self):
         l = QVBoxLayout(self)
         self.setLayout(l)
-        
-        l.addLayout(ImageTitleLayout(PLUGIN_ICON, 'CSV format', self))
-        body = HTMLDisplay(self)
-        l.addWidget(body)
-        
+        l.addLayout(ImageTitleLayout(self.icon, self.header, self))
+        self.body = HTMLDisplay(self)
+        l.addWidget(self.body)
+        self.rslt = []
+        self.setup_html()
+        self.body.setHtml('\n'.join(self.rslt))
+    
+    def setup_html(self):
+        return NotImplemented
+    
+    def html_builder(self, tag, content) -> str:
+        if tag and content:
+            return f'<{tag}>{content}</{tag}>'
+        if tag:
+            return f'<{tag}/>'
+        if content:
+            return content
+        return ''
+    
+    def list_builder(self, *args) -> str:
+        lines = '\n'.join([self.html_builder('li', a) for a in args])
+        return self.html_builder('ul', ('\n'+lines+'\n').strip())
+    
+    def append(self, tag, content):
+        self.rslt.append(self.html_builder(tag, content))
+
+
+class CSVformatDialog(HtmlInfoDialog):
+    title = _('CSV Format info')
+    header = _('CSV format')
+    
+    def setup_html(self):
         import inspect
         lines, num = inspect.getsourcelines(CSV)
         csv_code = ''.join(lines)
         
-        rslt = []
-        def html_builder(tag, content) -> str:
-            return f'<{tag}>{content}</{tag}>'
-        def list_builder(*args) -> str:
-            lines = '\n'.join([html_builder('li', a) for a in args])
-            return html_builder('ul', ('\n'+lines+'\n').strip())
-        def append(tag, content):
-            rslt.append(html_builder(tag, content))
-        
-        append('p', _('A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. '
+        self.append('p', _('A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. '
                       'A CSV file stores tabular data in plain text. Each line of the file is a data record. '
                       'Each record consists of one or more values, separated by commas. '
                       'The use of the comma as a value separator is the source of the name for this file format.'))
-        append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, '
+        self.append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, '
                       'but this plugin can tolerate some of such difference as input.'))
-        append('p', _('The CSV format supported by the plugin is the following:'))
-        rslt.append(list_builder(
+        self.append('p', _('The CSV format supported by the plugin is the following:'))
+        self.append('', self.list_builder(
             _('The entire file must be "saved" in the Unicode (UTF-8) character set.'),
             _('The value delimiter (column separator) must be a single comma (not tab-separated or fixed width).'),
             _('The CSV require at least two columns.'),
-            _('The CSV require at least two rows/lines:')+'\n'+list_builder(
+            _('The CSV require at least two rows/lines:')+'\n'+self.list_builder(
                 _('The first row must be a "header" row which contains the double-quoted unique textual name of each column.'),
                 _('All rows after the first row must contain either textual values or empty within each and every column.'),
                 _('All rows must have the same number of double-quoted textual columns as the "header" row.'),
             ),
-            _('All values should preferably be double-quoted.')+'\n'+list_builder(
+            _('All values should preferably be double-quoted.')+'\n'+self.list_builder(
                 _('To include a double-quote character inside a value, write two double-quote consecutively "".'),
             ),
             _('Leading and trailing spaces will be removed from each value automatically.'),
             _('Empty value will be skipped (no edit action).'),
             _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
         ))
-        rslt.append('<hr>')
-        append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
+        self.append('hr', '')
+        self.append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
-        append('pre', csv_code)
-        
-        body.setHtml('\n'.join(rslt))
+        self.append('pre', csv_code)
 
 
 class CSVMetadataAction(InterfaceAction):
