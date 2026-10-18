@@ -139,7 +139,6 @@ class CSVdata(NamedTuple):
     header: List[str]
     rows: List[List[str]]
     errors: List[CSVdataError] = None
-    has_reference: bool = False
     options: OptionsUpdate = OptionsUpdate()
     match_type: MatchType = MatchType.insensitive_equal
 
@@ -338,6 +337,69 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
                 value = mi.format_field(field, series_with_index=series_with_index)[1] or ''
                 row.append(value.strip())
             writer.writerow(row)
+
+
+def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], options: OptionsUpdate) -> CSVdata:
+    fm = current_db().field_metadata
+    data = []
+    errors = []
+    adapters = {f:get_adapter(f, fm, series_with_index=options.series_with_index) for f,c in fields_map}
+    for r,row in enumerate(csv_data.rows):
+        tbl = []
+        for f,c in fields_map:
+            if row[c] == '':
+                tbl.append('')
+            elif row[c] == 'NULL':
+                tbl.append(None)
+            else:
+                try:
+                    tbl.append(adapters[f](row[c]))
+                except Exception as err:
+                    tbl.append(CSVdataError(
+                        c, r,
+                        csv_data.header[c],
+                        field_name(f, fm),
+                        err,
+                    ))
+        if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
+            data.append(tbl)
+            errors.extend(e for e in tbl if isinstance(e, CSVdataError))
+    
+    return CSVdata(
+        [f for f,c in fields_map],
+        data,
+        errors=errors,
+        options=options,
+    )
+
+
+def parse_preview_data(data: CSVdata) -> CSVdata:
+    fm = current_db().field_metadata
+    pre_header = [field_name(h, fm) for h in data.header]
+    pre_data = []
+    for row in data.rows:
+        tbl = []
+        pre_data.append(tbl)
+        for value in row:
+            if value is None:
+                value = 'NULL'
+            elif isinstance(value, (int, float, bool)):
+                value = str(value).lower()
+            elif isinstance(value, datetime):
+                value = value.isoformat(' ')
+                value = value.replace('+00:00', '')
+                value = value.replace('00:00:00', '')
+            elif isinstance(value, (list, tuple)):
+                sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                value = sv.join(value)
+            elif isinstance(value, dict):
+                sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
+                value = sv.join([f'{k}:{v}' for k,v in value])
+            if isinstance(value, str):
+                value = value.strip()
+            tbl.append(value)
+    
+    return data._replace(header=pre_header, rows=pre_data)
 
 
 def case_sensitive_key(case_sensitive: bool):

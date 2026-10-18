@@ -74,11 +74,12 @@ from .backend import (
     OptionsUpdate,
     export_csv_file,
     field_name,
-    get_adapter,
     get_all_fields,
     get_seekable_fields,
     get_writable_fields,
     load_csv_file,
+    parse_preview_data,
+    parse_update_data,
     update_library_data,
 )
 from .common_utils import GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, get_icon
@@ -461,10 +462,12 @@ class ViewCSVdataDialog(Dialog):
         self,
         data: CSVdata,
         validate: bool=False,
+        has_reference: bool=False,
         parent=None,
     ):
         self.data = data
-        self.validate = validate or False
+        self.validate = validate
+        self.has_reference = has_reference
         Dialog.__init__(self,
             title=_('View CSV content data'),
             name='plugin.CSVMetadata:ViewCSVdataDialog',
@@ -527,7 +530,7 @@ class ViewCSVdataDialog(Dialog):
                             data.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
                         )
                 t.setItem(idr, idc, item)
-        if self.data.has_reference:
+        if self.has_reference:
             item_style(t.horizontalHeaderItem(0), italic=True)
             for r in range(t.rowCount()):
                 item_style(t.item(r, 0), italic=True)
@@ -758,8 +761,7 @@ class UpdateCSVdialog(Dialog):
             return None
         
         fm = current_db().field_metadata
-        header, data = [], []
-        errors = []
+        fields_map = []
         data_map = []
         
         data_map.append(self.reference_header.currentIndex())
@@ -767,11 +769,11 @@ class UpdateCSVdialog(Dialog):
             field = MatchType.search
         else:
             field = self.reference_field.selected_key()
-        header.append(field)
+        fields_map.append((field, self.reference_header.currentIndex()))
         
         for i,w in self.csv_widget.items():
             if k := w.selected_key():
-                if k in header[1:]:
+                if k in {kv[0] for kv in fields_map[1:]}:
                     error_dialog(
                         self,
                         _('Duplicate updated field'),
@@ -783,41 +785,14 @@ class UpdateCSVdialog(Dialog):
                         show_copy_button=False,
                     )
                     return None
-                header.append(k)
-                data_map.append(i)
-        
-        swi = self.options['series_with_index'].isChecked()
-        adapters = [get_adapter(k, fm, series_with_index=swi) for k in header]
-        r, f, c = 0, 0, 0
-        for r,row in enumerate(self.csv_data.rows):
-            tbl = []
-            for f,c in enumerate(data_map):
-                if row[c] == '':
-                    tbl.append('')
-                elif row[c] == 'NULL':
-                    tbl.append(None)
-                else:
-                    try:
-                        tbl.append(adapters[f](row[c]))
-                    except Exception as err:
-                        tbl.append(CSVdataError(
-                            c, r,
-                            self.csv_data.header[c],
-                            field_name(header[f], fm),
-                            err,
-                        ))
-            if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
-                data.append(tbl)
-                errors.extend(e for e in tbl if isinstance(e, CSVdataError))
+                fields_map.append((k, i))
         
         options = {k:v.isChecked() for k,v in self.options.items()}
-        return CSVdata(
-            header,
-            data,
-            errors=errors,
-            match_type=self.match_type.selected_key(),
-            options=OptionsUpdate(**options),
-        )
+        return parse_update_data(
+            self.csv_data,
+            fields_map,
+            OptionsUpdate(**options),
+        )._replace(match_type=self.match_type.selected_key())
 
     def accept(self):
         self.data = self.preview_update_data(validate=True)
@@ -842,34 +817,10 @@ class UpdateCSVdialog(Dialog):
             )
             return None
         
-        fm = current_db().field_metadata
-        pre_header = [field_name(h, fm) for h in data.header]
-        pre_data = []
-        for row in data.rows:
-            tbl = []
-            pre_data.append(tbl)
-            for value in row:
-                if value is None:
-                    value = 'NULL'
-                elif isinstance(value, (int, float, bool)):
-                    value = str(value).lower()
-                elif isinstance(value, datetime):
-                    value = value.isoformat(' ')
-                    value = value.replace('+00:00', '')
-                    value = value.replace('00:00:00', '')
-                elif isinstance(value, (list, tuple)):
-                    sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                    value = sv.join(value)
-                elif isinstance(value, dict):
-                    sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                    value = sv.join([f'{k}:{v}' for k,v in value])
-                if isinstance(value, str):
-                    value = value.strip()
-                tbl.append(value)
-        
         d = ViewCSVdataDialog(
-            data._replace(header=pre_header, rows=pre_data, has_reference=True),
+            parse_preview_data(data),
             validate=validate,
+            has_reference=True,
             parent=self,
         ).exec()
         if d != Dialog.DialogCode.Accepted or data.errors:
