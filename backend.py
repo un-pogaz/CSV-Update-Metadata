@@ -59,7 +59,8 @@ class MatchType(Enum):
             # ),
             MatchType.search: (
                 _('Calibre search'),
-                _('Uses the Calibre search engine. No book field to match is required for this mode.'),
+                _('Uses the <a href="{}">Calibre search engine</a>. No book field to match is required for this mode.')
+                .format('https://manual.calibre-ebook.com/gui.html#the-search-interface'),
             ),
         }
     
@@ -250,7 +251,14 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
     from calibre.db.write import get_adapter
     
     if name == MatchType.search:
-        return lambda x:x
+        def ans(x):
+            if not x:
+                return None
+            x = x.strip()
+            if not x:
+                return None
+            return x
+        return ans
     
     if name == 'isbn':
         return _parse_isbn
@@ -480,8 +488,21 @@ def _book_ids_many_many(
     return rslt
 
 
+def _book_ids_search(db: Cache, values: List[str]) -> List[List[int]]:
+    rslt = []
+    for v in values:
+        if not v:
+            rslt.append([])
+            continue
+        rslt.append(sorted(db.search(v)))
+    return rslt
+
+
 def get_book_ids(field: str, values: List, match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
     db = current_db().new_api
+    
+    if field == MatchType.search:
+        return _book_ids_search(db, values)
     
     case_sensitive = match_type == MatchType.strict_equal
     
