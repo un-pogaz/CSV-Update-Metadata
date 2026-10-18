@@ -413,14 +413,18 @@ def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: 
 
 
 def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
-    if not isinstance(db.fields[field], ManyToOneField):
+    field_table = db.fields[field]
+    if not isinstance(field_table, ManyToOneField):
         raise TypeError(f'Target field {field!r} is not a {ManyToOneField.__name__!r}')
     
-    item_map = db.get_item_ids(field, values, case_sensitive=case_sensitive)
+    key = _get_case_sensitive(case_sensitive)
+    rmap = {key(v): k for k, v in field_table.table.id_map.items()}
+    item_map = {v: rmap.get(key(v), None) for v in values}
+    
     rslt = []
     for v in values:
-        item_ids = db.books_for_field(field, item_map[v])
-        rslt.append(sorted(item_ids or []))
+        item_ids = field_table.table.col_book_map.get(item_map[v], set())
+        rslt.append(sorted(item_ids))
     return rslt
 
 
