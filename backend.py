@@ -182,6 +182,21 @@ def get_writable_fields() -> Set[str]:
     return rslt.difference(('library_name', 'id', 'uuid', 'size', 'pages'))
 
 
+def get_special_field() -> Tuple[Set[str], Set[str], Set[str]]:
+    db = current_db().new_api
+    series_field = set()
+    tags_field = set()
+    identifiers_field = set()
+    for k,v in db.fields.items():
+        if isinstance(v, SeriesField):
+            series_field.add(k)
+        if isinstance(v, ManyToManyField):
+            tags_field.add(k)
+        if isinstance(v, IdentifiersField):
+            identifiers_field.add(k)
+    return series_field, tags_field.difference(identifiers_field), identifiers_field
+
+
 def field_name(field: str, field_metadata: Dict) -> str:
     if field == MatchType.search:
         return MatchType.search.label
@@ -340,6 +355,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
 
 
 def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], options: OptionsUpdate) -> CSVdata:
+    series, tags, identifiers = get_special_field()
     fm = current_db().field_metadata
     data = []
     errors = []
@@ -361,6 +377,17 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
                         field_name(f, fm),
                         err,
                     ))
+        
+        for i,v in enumerate(tbl):
+            if v:
+                continue
+            f, c = fields_map[i]
+            if f in identifiers:
+                v = ''
+            if f in tags and options.append_tags_value:
+                v = ''
+            tbl[i] = v
+        
         if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
             data.append(tbl)
             errors.extend(e for e in tbl if isinstance(e, CSVdataError))
