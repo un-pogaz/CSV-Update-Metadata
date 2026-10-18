@@ -350,6 +350,10 @@ def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], c
     key = case_sensitive_key(case_sensitive)
     rslt = []
     for iden in values:
+        if not iden:
+            rslt.append([])
+            continue
+        
         # map for this identifiers list
         rslt_map = defaultdict(dict)
         for k,v in iden.items():
@@ -522,7 +526,7 @@ def get_book_ids(field: str, values: List, match_type: MatchType, options: Optio
                 tags_contain_value=options.tags_contain_value,
             )
     
-    raise NotImplementedError(f'{field!r} is not supported.')
+    raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
 
 def update_library_data(data: CSVdata):
