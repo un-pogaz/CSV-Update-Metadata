@@ -331,8 +331,14 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             writer.writerow(row)
 
 
-def _get_case_sensitive(case_sensitive: bool):
-    return (lambda x:x) if case_sensitive else icu_lower
+def case_sensitive_key(case_sensitive: bool):
+    if case_sensitive:
+        return lambda x:x
+    def f(x):
+        if isinstance(x, str):
+            return icu_lower(x)
+        return x
+    return f
 
 
 def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
@@ -340,7 +346,7 @@ def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], c
     if not isinstance(field_table, IdentifiersField):
         raise TypeError(f'Target field to seek is not a {IdentifiersField.__name__!r}')
     
-    key = _get_case_sensitive(case_sensitive)
+    key = case_sensitive_key(case_sensitive)
     rslt = []
     for iden in values:
         # map for this identifiers list
@@ -393,7 +399,7 @@ def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: 
     if not isinstance(field_table, OneToOneField):
         raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
     
-    key = _get_case_sensitive(case_sensitive)
+    key = case_sensitive_key(case_sensitive)
     # registre the values
     value_map = {}
     for v in values:
@@ -417,7 +423,7 @@ def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive:
     if not isinstance(field_table, ManyToOneField):
         raise TypeError(f'Target field {field!r} is not a {ManyToOneField.__name__!r}')
     
-    key = _get_case_sensitive(case_sensitive)
+    key = case_sensitive_key(case_sensitive)
     rmap = {key(v): k for k, v in field_table.table.id_map.items()}
     item_map = {v: rmap.get(key(v), None) for v in values}
     
@@ -453,10 +459,10 @@ def get_book_ids(field: str, values: List, match_type: MatchType, options: Optio
     dt = fm['datatype']
     
     if dt in {'int', 'float', 'bool'}:
-        return _book_ids_one_one(db, field, values, case_sensitive=True)
+        return _book_ids_one_one(db, field, values, case_sensitive=None)
     
     if dt in {'rating'}:
-        return _book_ids_many_one(db, field, values, case_sensitive=True)
+        return _book_ids_many_one(db, field, values, case_sensitive=None)
     if dt in {'enumeration'}:
         return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
     
