@@ -723,6 +723,8 @@ class UpdateCSVdialog(Dialog):
 
     def match_type_changed(self, idx):
         hide = self.match_type.selected_key() != MatchType.search
+        self.options['series_with_index'].setVisible(hide)
+        self.options['tags_contain_value'].setVisible(hide)
         self.reference_selector.setRowVisible(self.reference_field_row, hide)
 
     def get_data_update_map(self) -> CSVdata:
