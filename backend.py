@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
 from functools import lru_cache
+from itertools import chain
 from typing import Callable, Dict, List, NamedTuple, Set, Tuple
 
 from calibre.db.cache import Cache
@@ -434,6 +435,47 @@ def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive:
     return rslt
 
 
+def _book_ids_many_many(
+    db: Cache,
+    field: str,
+    values: List[List[str]],
+    case_sensitive: bool,
+    tags_contain_value: bool,
+) -> List[List[int]]:
+    field_table = db.fields[field]
+    if not isinstance(field_table, ManyToManyField):
+        raise TypeError(f'Target field {field!r} is not a {ManyToManyField.__name__!r}')
+    
+    key = case_sensitive_key(case_sensitive)
+    rmap = {key(v): k for k, v in field_table.table.id_map.items()}
+    item_map = {v: rmap.get(key(v), None) for v in set(chain(*values))}
+    
+    rslt = []
+    cbm = field_table.table.col_book_map
+    bcm = field_table.table.book_col_map
+    for tags in values:
+        if not tags:
+            rslt.append([])
+            continue
+        
+        # filter intersection
+        all_ids = set()
+        for t in tags:
+            all_ids.update(cbm.get(item_map[t], set()))
+        for t in tags:
+            all_ids.intersection_update(cbm.get(item_map[t], set()))
+        
+        # filter exact collections
+        if tags_contain_value:
+            f = None
+        else:
+            def f(x):
+                return len(bcm.get(x, ())) == len(tags)
+        
+        rslt.append(sorted(filter(f, all_ids)))
+    return rslt
+
+
 def get_book_ids(field: str, values: List, match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
     db = current_db().new_api
     
@@ -471,6 +513,14 @@ def get_book_ids(field: str, values: List, match_type: MatchType, options: Optio
             return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
         if isinstance(field_table, OneToOneField):
             return _book_ids_one_one(db, field, values, case_sensitive=case_sensitive)
+        if isinstance(field_table, ManyToManyField):
+            return _book_ids_many_many(
+                db,
+                field,
+                values,
+                case_sensitive=case_sensitive,
+                tags_contain_value=options.tags_contain_value,
+            )
     
     raise NotImplementedError(f'{field!r} is not supported.')
 
