@@ -282,7 +282,7 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
     adapter = get_adapter(name, metadata)
     def f(x):
         rslt = adapter(x)
-        if isinstance(rslt, (list, tuple, dict)) and not rslt:
+        if isinstance(rslt, (list, tuple, set, dict)) and not rslt:
             return None
         if isinstance(rslt, datetime) and is_date_undefined(rslt):
             return None
@@ -290,6 +290,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
             return None
         if name == 'author_sort' and not rslt:
             return None
+        if isinstance(rslt, (list, tuple, set)):
+            return tuple(rslt)
         return rslt
     return f
 
