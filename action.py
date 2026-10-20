@@ -82,7 +82,7 @@ from .backend import (
     parse_update_data,
     update_library_data,
 )
-from .common_utils import GUI, PLUGIN_NAME, PREFS_json, PREFS_library, current_db, get_icon
+from .common_utils import PLUGIN_NAME, PREFS_json, PREFS_library, current_db, get_gui, get_icon
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
@@ -212,7 +212,7 @@ class CSVMetadataAction(InterfaceAction):
     dont_add_to = frozenset(['context-menu-device'])
     
     def genesis(self):
-        self.menu = QMenu(GUI)
+        self.menu = QMenu(get_gui())
         self.qaction.setMenu(self.menu)
         self.qaction.setIcon(get_icon(PLUGIN_ICON))
         self.qaction.triggered.connect(self.toolbar_triggered)
@@ -240,13 +240,13 @@ class CSVMetadataAction(InterfaceAction):
                                         unique_name='&About the CSV Format',
                                         shortcut=False)
         
-        GUI.keyboard.finalize()
+        get_gui().keyboard.finalize()
     
     def toolbar_triggered(self):
         self.update_metadata()
     
     def show_csv_format(self):
-        CSVformatDialog(GUI).exec()
+        CSVformatDialog(get_gui()).exec()
     
     def update_metadata(self):
         path = pick_csv_to_load()
@@ -260,7 +260,7 @@ class CSVMetadataAction(InterfaceAction):
                 _('To be sure to use a valid format, check the section "About the CSV Format".'),
             ])
             error_dialog(
-                GUI,
+                get_gui(),
                 _('Malformed CSV format'),
                 f'<p>{msg}\n'+
                 f'<p><b>{err.__class__.__name__}:</b> {err}',
@@ -269,7 +269,7 @@ class CSVMetadataAction(InterfaceAction):
             )
             return
         
-        d = UpdateCSVdialog(path, data, parent=GUI)
+        d = UpdateCSVdialog(path, data, parent=get_gui())
         rslt = d.exec()
         if rslt == Dialog.DialogCode.Accepted and d.data:
             UpdateDataProgress(d.data)
@@ -278,13 +278,13 @@ class CSVMetadataAction(InterfaceAction):
         ids = get_BookIds_selected(True)
         if not ids:
             return
-        ExportCSVdialog(ids, GUI).exec()
+        ExportCSVdialog(ids, get_gui()).exec()
 
 
 class UpdateDataProgress(QProgressDialog):
     def __init__(self, data: CSVdata):
         self.data = data
-        QProgressDialog.__init__(self, '', None, 0, 0, GUI)
+        QProgressDialog.__init__(self, '', None, 0, 0, get_gui())
         self.setMinimumWidth(500)
         self.setMinimumHeight(100)
         self.setMinimumDuration(100)
@@ -302,7 +302,7 @@ class UpdateDataProgress(QProgressDialog):
 
 
 def pick_csv_to_load(parent=None) -> str:
-    archives = choose_files(parent or GUI,
+    archives = choose_files(parent or get_gui(),
         name='csv dialog',
         title=_('Select a CSV file to load…'),
         filters=[('CSV Files', ['csv'])],
@@ -314,7 +314,7 @@ def pick_csv_to_load(parent=None) -> str:
 
 
 def pick_csv_to_export(parent=None) -> str:
-    fd = FileDialog(parent=parent or GUI,
+    fd = FileDialog(parent=parent or get_gui(),
         name='csv dialog',
         title=_('Export CSV file as…'),
         filters=[('CSV Files', ['csv'])],
@@ -401,7 +401,7 @@ class ExportCSVdialog(Dialog):
             self.list.item(row).setCheckState(Qt.CheckState.Unchecked)
 
     def select_visible(self):
-        state = GUI.library_view.get_state()
+        state = get_gui().library_view.get_state()
         hidden = set(state['hidden_columns'])
         for row in range(self.list.count()):
             item = self.list.item(row)
@@ -681,7 +681,7 @@ class UpdateCSVdialog(Dialog):
                 _('To be sure to use a valid format, check the section "About the CSV Format".'),
             ])
             error_dialog(
-                GUI,
+                get_gui(),
                 _('Malformed CSV format'),
                 f'<p>{msg}\n'+
                 f'<p><b>{err.__class__.__name__}:</b> {err}',
