@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
 from functools import lru_cache
-from itertools import chain
 from typing import Callable, Dict, List, NamedTuple, Set, Tuple, Union
 
 from calibre.db.cache import Cache
@@ -143,6 +142,29 @@ class CSVdata(NamedTuple):
     errors: List[CSVdataError] = None
     options: OptionsUpdate = OptionsUpdate()
     match_type: MatchType = MatchType.insensitive_equal
+
+
+class UpdateDataRow(NamedTuple):
+    seek: DataCell
+    data: Dict[str, DataCell]
+    book_ids: Set[int]
+    
+    @staticmethod
+    def from_row(header: List[str], data_row: List[DataCell]) -> 'UpdateDataRow':
+        data = {}
+        for i, cell in enumerate(data_row):
+            if i == 0:
+                continue
+            data[header[i]] = cell
+        return UpdateDataRow(
+            seek=data_row[0],
+            data=data,
+            book_ids=set(),
+        )
+    
+    @staticmethod
+    def from_csv(data: CSVdata) -> List['UpdateDataRow']:
+        return [UpdateDataRow.from_row(data.headers, r) for r in data.rows]
 
 
 def get_all_fields() -> Set[str]:
@@ -443,64 +465,65 @@ def case_sensitive_key(case_sensitive: bool) -> Callable[[DataCell], Union[bytes
     return f
 
 
-def _book_ids_identifiers(db: Cache, field: str, values: List[Dict[str, str]], case_sensitive: bool) -> List[List[int]]:
+def _book_ids_identifiers(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool):
     field_table = db.fields[field]
     if not isinstance(field_table, IdentifiersField):
         raise TypeError(f'Target field to seek is not a {IdentifiersField.__name__!r}')
     
     key = case_sensitive_key(case_sensitive)
     rslt = []
-    for iden in values:
-        if not iden:
-            rslt.append([])
+    for r in rows:
+        r.book_ids.clear()
+        if not r.seek:
             continue
         
         # map for this identifiers list
         rslt_map = defaultdict(dict)
-        for k,v in iden.items():
+        for k,v in r.seek.items():
             rslt_map[k][key(v)] = []
-            all_ids = field_table.table.col_book_map[k]
-            for i in all_ids:
+            book_ids = field_table.table.col_book_map[k]
+            for i in book_ids:
                 vv = field_table.table.book_col_map[i][k]
                 kk = key(vv)
                 if kk in rslt_map[k]:
                     rslt_map[k][kk].append(i)
         
         # filter intersection
-        all_ids = set()
+        book_ids = set()
         for v in rslt_map.values():
             for vv in v.values():
-                all_ids.update(vv)
+                book_ids.update(vv)
         for v in rslt_map.values():
             for vv in v.values():
                 if vv:
-                    all_ids.intersection_update(vv)
+                    book_ids.intersection_update(vv)
         
-        rslt.append(sorted(all_ids))
-    return rslt
+        r.book_ids.update(book_ids)
 
 
-def _book_ids_series(db: Cache, field: str, values: List[str], case_sensitive: bool, series_with_index: bool) -> List[List[int]]:
+def _book_ids_series(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool, series_with_index: bool):
     indexs = []
+    values = rows
     if series_with_index:
-        indexs = [None for x in range(len(values))]
-        for i,v in enumerate(values):
-            sn, si = _split_series_with_index(v)
-            values[i] = sn
-            indexs[i] = si
+        values = []
+        indexs = []
+        for r in rows:
+            sn, si = _split_series_with_index(r.seek)
+            values.append(UpdateDataRow(seek=sn, data={}, book_ids=set()))
+            indexs.append(si)
     
-    rslt = _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
+    _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
     if not series_with_index:
-        return rslt
+        return
     
-    for i,v in enumerate(indexs):
+    for i,v,r in zip(indexs, values, rows):
+        r.book_ids.clear()
         def f(x):
-            return db.field_for(f'{field}_index', x) == v
-        rslt[i] = list(filter(f, rslt[i]))
-    return rslt
+            return db.field_for(f'{field}_index', x) == i
+        r.book_ids.update(filter(f, v.book_ids))
 
 
-def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
+def _book_ids_one_one(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
     if not isinstance(field_table, OneToOneField):
         raise TypeError(f'Target field {field!r} is not a {OneToOneField.__name__!r}')
@@ -508,8 +531,8 @@ def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: 
     key = case_sensitive_key(case_sensitive)
     # registre the values
     value_map = {}
-    for v in values:
-        value_map[key(v)] = []
+    for r in rows:
+        value_map[key(r.seek)] = []
     
     if field == 'series_index':
         bcm = db.fields['series'].table.book_col_map
@@ -521,121 +544,117 @@ def _book_ids_one_one(db: Cache, field: str, values: List[str], case_sensitive: 
     
     for k,v in filter(f, field_table.table.book_col_map.items()):
         value_map[key(v)].append(k)
-    return [sorted(value_map[key(v)]) for v in values]
+    
+    for r in rows:
+        r.book_ids.clear()
+        r.book_ids.update(value_map[key(r.seek)])
 
 
-def _book_ids_many_one(db: Cache, field: str, values: List[str], case_sensitive: bool) -> List[List[int]]:
+def _book_ids_many_one(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool) -> List[List[int]]:
     field_table = db.fields[field]
     if not isinstance(field_table, ManyToOneField):
         raise TypeError(f'Target field {field!r} is not a {ManyToOneField.__name__!r}')
     
     key = case_sensitive_key(case_sensitive)
     rmap = {key(v): k for k, v in field_table.table.id_map.items()}
-    item_map = {v: rmap.get(key(v), None) for v in values}
+    item_map = {r.seek: rmap.get(key(r.seek), None) for r in rows}
     
-    rslt = []
-    for v in values:
-        item_ids = field_table.table.col_book_map.get(item_map[v], set())
-        rslt.append(sorted(item_ids))
-    return rslt
+    for r in rows:
+        r.book_ids.clear()
+        book_ids = field_table.table.col_book_map.get(item_map[r.seek], set())
+        r.book_ids.update(book_ids)
 
 
-def _book_ids_many_many(
-    db: Cache,
-    field: str,
-    values: List[List[str]],
-    case_sensitive: bool,
-    tags_contain_value: bool,
-) -> List[List[int]]:
+def _book_ids_many_many(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool, tags_contain_value: bool):
     field_table = db.fields[field]
     if not isinstance(field_table, ManyToManyField):
         raise TypeError(f'Target field {field!r} is not a {ManyToManyField.__name__!r}')
     
+    flat_values = set()
+    for r in rows:
+        flat_values.update(r.seek)
+    
     key = case_sensitive_key(case_sensitive)
     rmap = {key(v): k for k, v in field_table.table.id_map.items()}
-    item_map = {v: rmap.get(key(v), None) for v in set(chain(*values))}
+    item_map = {v: rmap.get(key(v), None) for v in flat_values}
     
-    rslt = []
     cbm = field_table.table.col_book_map
     bcm = field_table.table.book_col_map
-    for tags in values:
-        if not tags:
-            rslt.append([])
+    for r in rows:
+        r.book_ids.clear()
+        if not r.seek:
             continue
         
         # filter intersection
-        all_ids = set()
-        for t in tags:
-            all_ids.update(cbm.get(item_map[t], set()))
-        for t in tags:
-            all_ids.intersection_update(cbm.get(item_map[t], set()))
+        book_ids = set()
+        for t in r.seek:
+            book_ids.update(cbm.get(item_map[t], set()))
+        for t in r.seek:
+            book_ids.intersection_update(cbm.get(item_map[t], set()))
         
         # filter exact collections
         if tags_contain_value:
             f = None
         else:
             def f(x):
-                return len(bcm.get(x, ())) == len(tags)
+                return len(bcm.get(x, ())) == len(r.seek)
         
-        rslt.append(sorted(filter(f, all_ids)))
-    return rslt
+        r.book_ids.update(filter(f, book_ids))
 
 
-def _book_ids_search(db: Cache, values: List[str]) -> List[List[int]]:
-    rslt = []
-    for v in values:
-        if not v:
-            rslt.append([])
+def _book_ids_search(db: Cache, rows: List[UpdateDataRow]):
+    for r in rows:
+        r.book_ids.clear()
+        if not r.seek:
             continue
-        rslt.append(sorted(db.search(v)))
-    return rslt
+        r.book_ids.update(db.search(r.seek))
 
 
-def get_book_ids(field: str, values: List, match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
+def process_book_ids(field: str, rows: List[UpdateDataRow], match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
     db = current_db().new_api
     
     if field == MatchType.search:
-        return _book_ids_search(db, values)
+        return _book_ids_search(db, rows)
     
     case_sensitive = match_type == MatchType.strict_equal
     
     if field == 'id':
-        return [list(filter(db.has_id, (i,))) for i in values]
+        return [list(filter(db.has_id, (r.seek,))) for r in rows]
     if field == 'uuid':
-        def f(x):
-            return db.lookup_by_uuid(x.lower())
-        return [list(filter(None, (u,))) for u in map(f, values)]
+        def f(r: UpdateDataRow):
+            return db.lookup_by_uuid(r.seek.lower())
+        return [list(filter(None, (u,))) for u in map(f, rows)]
     if field == 'isbn':
-        tbl = [{'isbn': v for v in values}]
+        tbl = [r._replace(seek={'isbn': r.seek}) for r in rows]
         return _book_ids_identifiers(db, 'identifiers', tbl, case_sensitive=case_sensitive)
     
     field_table = db.fields[field]
     if isinstance(field_table, IdentifiersField):
-        return _book_ids_identifiers(db, field, values, case_sensitive=case_sensitive)
+        return _book_ids_identifiers(db, field, rows, case_sensitive=case_sensitive)
     if isinstance(field_table, SeriesField):
-        return _book_ids_series(db, field, values, case_sensitive=case_sensitive, series_with_index=options.series_with_index)
+        return _book_ids_series(db, field, rows, case_sensitive=case_sensitive, series_with_index=options.series_with_index)
     
     fm = db.field_metadata[field]
     dt = fm['datatype']
     
     if dt in {'int', 'float', 'bool'}:
-        return _book_ids_one_one(db, field, values, case_sensitive=None)
+        return _book_ids_one_one(db, field, rows, case_sensitive=None)
     
     if dt in {'rating'}:
-        return _book_ids_many_one(db, field, values, case_sensitive=None)
+        return _book_ids_many_one(db, field, rows, case_sensitive=None)
     if dt in {'enumeration'}:
-        return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
+        return _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
     
     if dt == 'text':
         if isinstance(field_table, ManyToOneField):
-            return _book_ids_many_one(db, field, values, case_sensitive=case_sensitive)
+            return _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
         if isinstance(field_table, OneToOneField):
-            return _book_ids_one_one(db, field, values, case_sensitive=case_sensitive)
+            return _book_ids_one_one(db, field, rows, case_sensitive=case_sensitive)
         if isinstance(field_table, ManyToManyField):
             return _book_ids_many_many(
                 db,
                 field,
-                values,
+                rows,
                 case_sensitive=case_sensitive,
                 tags_contain_value=options.tags_contain_value,
             )
@@ -647,11 +666,8 @@ def update_library_data(data: CSVdata):
     if not data or not data.headers or not data.rows or len(data.headers) < 2:
         return
     
+    update_data = UpdateDataRow.from_csv(data)
+    process_book_ids(data.headers[0], update_data, data.match_type, data.options)
+    
     db = current_db().new_api
-    book_id = get_book_ids(
-        data.header[0],
-        [r[0] for r in data.rows],
-        data.match_type,
-        data.options,
-    )
     # db.set_field(self, name, book_id_to_val_map, allow_case_change=True, do_path_update=True)
