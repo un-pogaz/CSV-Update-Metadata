@@ -497,8 +497,8 @@ class ViewCSVdataDialog(Dialog):
         t.setMinimumSize(400, 200)
         l.addWidget(t)
         
-        t.setColumnCount(len(self.data.header))
-        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.data.header)])
+        t.setColumnCount(len(self.data.headers))
+        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.data.headers)])
         t.verticalHeader().setDefaultSectionSize(24)
         
         t.setRowCount(len(self.data.rows))
@@ -693,9 +693,9 @@ class UpdateCSVdialog(Dialog):
         self.populate()
 
     def populate(self):
-        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_data.header), len(self.csv_data.rows)))
+        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_data.headers), len(self.csv_data.rows)))
         
-        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_data.header)}
+        all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_data.headers)}
         self.reference_header.clear()
         self.reference_header.addItems(all_headers.values())
         self.reference_header.setCurrentIndex(-1)
@@ -731,7 +731,7 @@ class UpdateCSVdialog(Dialog):
         self.reference_selector.setRowVisible(self.reference_field_row, hide)
 
     def get_data_update_map(self) -> CSVdata:
-        if not self.csv_data.header or not self.csv_data.rows:
+        if not self.csv_data.headers or not self.csv_data.rows:
             error_dialog(
                 self,
                 _('Source CSV is empty'),

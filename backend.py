@@ -17,7 +17,7 @@ from datetime import datetime
 from enum import Enum, auto
 from functools import lru_cache
 from itertools import chain
-from typing import Callable, Dict, List, NamedTuple, Set, Tuple
+from typing import Callable, Dict, List, NamedTuple, Set, Tuple, Union
 
 from calibre.db.cache import Cache
 from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField, OneToOneField, SeriesField
@@ -25,6 +25,8 @@ from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
 from .common_utils import CALIBRE_VERSION, current_db, debug_print
+
+DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, str], None]
 
 
 class CSV(csv.Dialect):
@@ -136,8 +138,8 @@ class OptionsUpdate(NamedTuple):
 
 
 class CSVdata(NamedTuple):
-    header: List[str]
-    rows: List[List[str]]
+    headers: List[str]
+    rows: List[List[DataCell]]
     errors: List[CSVdataError] = None
     options: OptionsUpdate = OptionsUpdate()
     match_type: MatchType = MatchType.insensitive_equal
@@ -375,7 +377,7 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
                 except Exception as err:
                     tbl.append(CSVdataError(
                         c, r,
-                        csv_data.header[c],
+                        csv_data.headers[c],
                         field_name(f, fm),
                         err,
                     ))
@@ -404,7 +406,7 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
 
 def parse_preview_data(data: CSVdata) -> CSVdata:
     fm = current_db().field_metadata
-    pre_header = [field_name(h, fm) for h in data.header]
+    pre_header = [field_name(h, fm) for h in data.headers]
     pre_data = []
     for row in data.rows:
         tbl = []
@@ -428,10 +430,10 @@ def parse_preview_data(data: CSVdata) -> CSVdata:
                 value = value.strip()
             tbl.append(value)
     
-    return data._replace(header=pre_header, rows=pre_data)
+    return data._replace(headers=pre_header, rows=pre_data)
 
 
-def case_sensitive_key(case_sensitive: bool):
+def case_sensitive_key(case_sensitive: bool) -> Callable[[DataCell], Union[bytes, DataCell]]:
     if case_sensitive:
         return lambda x:x
     def f(x):
@@ -642,7 +644,7 @@ def get_book_ids(field: str, values: List, match_type: MatchType, options: Optio
 
 
 def update_library_data(data: CSVdata):
-    if not data or not data.header or not data.rows or len(data.header) < 2:
+    if not data or not data.headers or not data.rows or len(data.headers) < 2:
         return
     
     db = current_db().new_api
