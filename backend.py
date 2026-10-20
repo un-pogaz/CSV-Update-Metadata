@@ -255,7 +255,7 @@ def _parse_isbn(x):
     return rslt
 
 
-series_index_pat = re.compile(r'(.+)\s+\[([0-9]+(\.[0-9]+))\]')
+series_index_pat = re.compile(r'(.+)\s+\[([0-9]+(\.[0-9]+)?)\]')
 
 
 def _split_series_with_index(x):
