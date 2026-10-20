@@ -27,6 +27,8 @@ from .common_utils import CALIBRE_VERSION, current_db, debug_print
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, str], None]
 
+NULL = 'NULL'
+
 
 class CSV(csv.Dialect):
     delimiter = ','
@@ -391,7 +393,7 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
         for f,c in fields_map:
             if row[c] == '':
                 tbl.append('')
-            elif row[c] == 'NULL':
+            elif row[c] == NULL:
                 tbl.append(None)
             else:
                 try:
@@ -435,7 +437,7 @@ def parse_preview_data(data: CSVdata) -> CSVdata:
         pre_data.append(tbl)
         for value in row:
             if value is None:
-                value = 'NULL'
+                value = NULL
             elif isinstance(value, (int, float, bool)):
                 value = str(value).lower()
             elif isinstance(value, datetime):

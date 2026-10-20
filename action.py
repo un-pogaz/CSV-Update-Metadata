@@ -68,6 +68,7 @@ from calibre.utils.icu import sort_key
 
 from .backend import (
     CSV,
+    NULL,
     CSVdata,
     CSVdataError,
     MatchType,
@@ -521,9 +522,9 @@ class ViewCSVdataDialog(Dialog):
                     item.setText(data)
                     if not data:
                         pass
-                    elif data == 'NULL':
+                    elif data == NULL:
                         item_style(item, italic=True)
-                        item.setToolTip('<i>NULL')
+                        item.setToolTip('<i>'+NULL)
                     else:
                         item.setToolTip(
                             '<p style="white-space:pre">'+
