@@ -25,7 +25,7 @@ from calibre.utils.icu import lower as icu_lower
 
 from .common_utils import CALIBRE_VERSION, current_db, debug_print
 
-DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, str], None]
+DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
 
 NULL = 'NULL'
 
@@ -318,6 +318,10 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
             return None
         if isinstance(rslt, (list, tuple, set)):
             return tuple(rslt)
+        if isinstance(rslt, dict):
+            for k,v in rslt.items():
+                if v == NULL or not v:
+                    rslt[k] = None
         return rslt
     return f
 
@@ -432,6 +436,13 @@ def parse_preview_data(data: CSVdata) -> CSVdata:
     fm = current_db().field_metadata
     pre_header = [field_name(h, fm) for h in data.headers]
     pre_data = []
+    
+    def map_dict(kv):
+        k,v = kv
+        if not v:
+            v = NULL
+        return f'{k}:{v}'
+    
     for row in data.rows:
         tbl = []
         pre_data.append(tbl)
@@ -449,7 +460,7 @@ def parse_preview_data(data: CSVdata) -> CSVdata:
                 value = sv.join(value)
             elif isinstance(value, dict):
                 sv = fm.get('is_multiple', {}).get('list_to_ui', ', ')
-                value = sv.join([f'{k}:{v}' for k,v in value])
+                value = sv.join(map(map_dict, value.items()))
             if isinstance(value, str):
                 value = value.strip()
             tbl.append(value)
