@@ -57,12 +57,12 @@ class MatchType(Enum):
             ),
             # MatchType.regex: (
             #     _('Regular expressions'),
-            #     _('Uses <a href="{}">Python regular expressions</a>.')
+            #     _('Use <a href="{}">Python regular expressions</a>.')
             #     .format('https://docs.python.org/library/re.html#regular-expression-syntax'),
             # ),
             MatchType.search: (
                 _('Calibre search'),
-                _('Uses the <a href="{}">Calibre search engine</a>. No book field to match is required for this mode.')
+                _('Use the <a href="{}">Calibre search engine</a>. No book field to match is required for this mode.')
                 .format('https://manual.calibre-ebook.com/gui.html#the-search-interface'),
             ),
         }
