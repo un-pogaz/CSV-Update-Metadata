@@ -305,7 +305,10 @@ class UpdateDataProgress(QProgressDialog):
         self.exec()
 
     def run_job(self):
-        update_library_data(self.data)
+        try:
+            update_library_data(self.data)
+        except Exception:
+            pass
         self.close()
 
 
