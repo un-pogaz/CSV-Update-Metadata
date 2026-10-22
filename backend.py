@@ -23,7 +23,7 @@ from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField,
 from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
-from .common_utils import CALIBRE_VERSION, current_db, debug_print
+from .common_utils import CALIBRE_VERSION, current_db, debug_print, get_gui
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
 
@@ -682,6 +682,44 @@ def build_update_map(data: CSVdata, match_type: MatchType, options: OptionsUpdat
     process_book_ids(data.headers[0], update_data, match_type, options)
 
 
-def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: OptionsUpdate):
+def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: OptionsUpdate) -> Set[int]:
     db = current_db().new_api
-    # db.set_field(self, name, book_id_to_val_map, allow_case_change=True, do_path_update=True)
+    allow_case_change = not options.dont_change_case
+    series_with_index = options.series_with_index
+    
+    series_field, x, x = get_special_field()
+    # ensure that the series index are updated after the series name
+    update_index_map = uim = defaultdict(dict)
+    for series in series_field:
+        index = f'{series}_index'
+        update_index_map[index] = update_map.pop(index, {})
+    
+    # series field allway try to parse with index format
+    # sanitize the value if contain bracket []
+    if not series_with_index:
+        for field, value_map in update_map.items():
+            if field not in series_field:
+                continue
+            index = f'{series}_index'
+            for k,v in filter(lambda x: '[' in x[1]), value_map.items():
+                i = uim[index].get(k)
+                if i is None:
+                    i = db.field_for(index, k)
+                if i is None:
+                    i = 1.0
+                value_map[k] = f'{v} [{i}]'
+    
+    update_map = {k:v for k,v in update_map.items() if v}
+    update_index_map = {k:v for k,v in update_index_map.items() if v}
+    
+    updated_ids = set()
+    with db.write_lock, db.backend.conn:
+        for field, value_map in update_map.items():
+            db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+        for field, value_map in update_index_map.items():
+            db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+    
+    gui = get_gui()
+    if gui:
+        gui.iactions['Edit Metadata'].refresh_gui(updated_ids, covers_changed=False)
+    return updated_ids
