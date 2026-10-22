@@ -157,6 +157,8 @@ class UpdateDataRow(NamedTuple):
         for i, cell in enumerate(data_row):
             if i == 0:
                 continue
+            if cell == '':
+                continue
             data[header[i]] = cell
         return UpdateDataRow(
             seek=data_row[0],
