@@ -10,8 +10,7 @@ except NameError:
     pass  # load_translations() added in calibre 1.9
 
 from collections import defaultdict
-from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 try:
     from qt.core import (
@@ -73,6 +72,7 @@ from .backend import (
     CSVdataError,
     MatchType,
     OptionsUpdate,
+    build_update_map,
     export_csv_file,
     field_name,
     get_all_fields,
@@ -279,8 +279,8 @@ class CSVMetadataAction(InterfaceAction):
         
         d = UpdateCSVdialog(path, data, parent=get_gui())
         rslt = d.exec()
-        if rslt == Dialog.DialogCode.Accepted and d.data:
-            UpdateDataProgress(d.data)
+        if rslt == Dialog.DialogCode.Accepted and d.output:
+            UpdateDataProgress(*d.output)
     
     def export_metadata(self):
         ids = get_BookIds_selected(True)
@@ -290,8 +290,10 @@ class CSVMetadataAction(InterfaceAction):
 
 
 class UpdateDataProgress(QProgressDialog):
-    def __init__(self, data: CSVdata):
+    def __init__(self, data: CSVdata, match_type: MatchType, options: OptionsUpdate):
         self.data = data
+        self.match_type = match_type
+        self.options = options
         QProgressDialog.__init__(self, '', None, 0, 0, get_gui())
         self.setMinimumWidth(500)
         self.setMinimumHeight(100)
@@ -306,10 +308,10 @@ class UpdateDataProgress(QProgressDialog):
 
     def run_job(self):
         try:
-            update_library_data(self.data)
-        except Exception:
-            pass
-        self.close()
+            update_map = build_update_map(self.data, self.match_type, self.options)
+            update_library_data(update_map, self.options)
+        finally:
+            self.close()
 
 
 def pick_csv_to_load(parent=None) -> str:
@@ -472,11 +474,15 @@ class ViewCSVdataDialog(Dialog):
     def __init__(
         self,
         data: CSVdata,
+        match_type: MatchType = None,
+        options: OptionsUpdate = None,
         validate: bool=False,
         has_reference: bool=False,
         parent=None,
     ):
         self.data = data
+        self.match_type = match_type
+        self.options = options
         self.validate = validate
         self.has_reference = has_reference
         Dialog.__init__(self,
@@ -490,11 +496,12 @@ class ViewCSVdataDialog(Dialog):
         self.setLayout(l)
         
         opt = []
-        if self.data.match_type:
-            opt.append(self.data.match_type.label)
-        for k,v in OptionsUpdate.items():
-            if getattr(self.data.options, k):
-                opt.append(v.label)
+        if self.match_type:
+            opt.append(self.match_type.label)
+        if self.options:
+            for k,v in OptionsUpdate.items():
+                if getattr(self.options, k):
+                    opt.append(v.label)
         
         if opt:
             label = QLabel(_('Update options:')+' '+ ', '.join(opt))
@@ -577,7 +584,7 @@ class UpdateCSVdialog(Dialog):
         self.csv_path = csv_path
         self.csv_data = data
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
-        self.data: CSVdata = None
+        self.output: Tuple[CSVdata, MatchType, OptionsUpdate] = None
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -741,7 +748,7 @@ class UpdateCSVdialog(Dialog):
         self.options['tags_contain_value'].setVisible(hide)
         self.reference_selector.setRowVisible(self.reference_field_row, hide)
 
-    def get_data_update_map(self) -> CSVdata:
+    def get_data_update_map(self) -> Tuple[CSVdata, MatchType, OptionsUpdate]:
         if not self.csv_data.headers or not self.csv_data.rows:
             error_dialog(
                 self,
@@ -798,21 +805,25 @@ class UpdateCSVdialog(Dialog):
                     return None
                 fields_map.append((k, i))
         
-        options = {k:v.isChecked() for k,v in self.options.items()}
-        return parse_update_data(
+        options_map = {k:v.isChecked() for k,v in self.options.items()}
+        options = OptionsUpdate(**options_map)
+        match_type = self.match_type.selected_key()
+        data = parse_update_data(
             self.csv_data,
             fields_map,
-            OptionsUpdate(**options),
-        )._replace(match_type=self.match_type.selected_key())
+            options,
+        )
+        return data, match_type, options
 
     def accept(self):
-        self.data = self.preview_update_data(validate=True)
-        if not self.data or self.data.errors:
+        rslt = self.preview_update_data(validate=True)
+        if not rslt or rslt[0].errors:
             return
+        self.output = rslt
         Dialog.accept(self)
 
-    def preview_update_data(self, validate: bool=False) -> CSVdata:
-        data = self.get_data_update_map()
+    def preview_update_data(self, validate: bool=False) ->  Tuple[CSVdata, MatchType, OptionsUpdate]:
+        data, match_type, options = self.get_data_update_map()
         if not data:
             return None
         if validate and data.errors:
@@ -830,10 +841,12 @@ class UpdateCSVdialog(Dialog):
         
         d = ViewCSVdataDialog(
             parse_preview_data(data),
+            match_type,
+            options,
             validate=validate,
             has_reference=True,
             parent=self,
         ).exec()
         if d != Dialog.DialogCode.Accepted or data.errors:
             return None
-        return data
+        return data, match_type, options

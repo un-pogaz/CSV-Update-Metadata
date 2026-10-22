@@ -89,6 +89,12 @@ class CSVdataError:
         return f'{self.exc.__class__.__name__}: {self.exc}'
 
 
+class CSVdata(NamedTuple):
+    headers: List[str]
+    rows: List[List[DataCell]]
+    errors: List[CSVdataError] = None
+
+
 class OptionsUpdate(NamedTuple):
     class Item(NamedTuple):
         label: str
@@ -136,14 +142,6 @@ class OptionsUpdate(NamedTuple):
     @staticmethod
     def values() -> List[Item]:
         yield from OptionsUpdate._data().values()
-
-
-class CSVdata(NamedTuple):
-    headers: List[str]
-    rows: List[List[DataCell]]
-    errors: List[CSVdataError] = None
-    options: OptionsUpdate = OptionsUpdate()
-    match_type: MatchType = MatchType.insensitive_equal
 
 
 class UpdateDataRow(NamedTuple):
@@ -430,7 +428,6 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
         [f for f,c in fields_map],
         data,
         errors=errors,
-        options=options,
     )
 
 
@@ -677,12 +674,14 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], match_type: MatchTyp
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
 
-def update_library_data(data: CSVdata):
+def build_update_map(data: CSVdata, match_type: MatchType, options: OptionsUpdate) -> Dict[str, Dict[str, DataCell]]:
     if not data or not data.headers or not data.rows or len(data.headers) < 2:
-        return
+        return {}
     
     update_data = UpdateDataRow.from_csv(data)
-    process_book_ids(data.headers[0], update_data, data.match_type, data.options)
-    
+    process_book_ids(data.headers[0], update_data, match_type, options)
+
+
+def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: OptionsUpdate):
     db = current_db().new_api
     # db.set_field(self, name, book_id_to_val_map, allow_case_change=True, do_path_update=True)
