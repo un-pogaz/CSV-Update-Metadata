@@ -823,9 +823,10 @@ class UpdateCSVdialog(Dialog):
         Dialog.accept(self)
 
     def preview_update_data(self, validate: bool=False) ->  Tuple[CSVdata, MatchType, OptionsUpdate]:
-        data, match_type, options = self.get_data_update_map()
-        if not data:
+        rslt = self.get_data_update_map()
+        if not rslt:
             return None
+        data, match_type, options = rslt
         if validate and data.errors:
             error_dialog(
                 self,
