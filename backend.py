@@ -308,6 +308,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
     adapter = get_adapter(name, metadata)
     def f(x):
         rslt = adapter(x)
+        if metadata['datatype'] == 'rating' and rslt == 0:
+            return None
         if isinstance(rslt, (list, tuple, set, dict)) and not rslt:
             return None
         if isinstance(rslt, datetime) and is_date_undefined(rslt):

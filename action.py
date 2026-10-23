@@ -309,7 +309,7 @@ class UpdateDataProgress(QProgressDialog):
     def run_job(self):
         try:
             update_map = build_update_map(self.data, self.match_type, self.options)
-            update_library_data(update_map, self.options)
+            update_ids = update_library_data(update_map, self.options)
         finally:
             self.close()
 
@@ -516,7 +516,7 @@ class ViewCSVdataDialog(Dialog):
         l.addWidget(t)
         
         t.setColumnCount(len(self.data.headers))
-        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.data.headers)])
+        t.setHorizontalHeaderLabels([(h if h else f'[{i}]') for i,h in enumerate(self.data.headers, 1)])
         t.verticalHeader().setDefaultSectionSize(24)
         
         t.setRowCount(len(self.data.rows))
