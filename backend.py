@@ -682,6 +682,40 @@ def build_update_map(data: CSVdata, match_type: MatchType, options: OptionsUpdat
     
     update_data = UpdateDataRow.from_csv(data)
     process_book_ids(data.headers[0], update_data, match_type, options)
+    
+    db = current_db().new_api
+    append_tags_value = options.append_tags_value
+    
+    x, tags_field, identifiers_field = get_special_field()
+    update_map = defaultdict(dict)
+    
+    def update(book_id, field, data):
+        if field in identifiers_field:
+            src = db.field_for(field, book_id)
+            src.update(data)
+            data = src
+        
+        if field in tags_field and append_tags_value:
+            src = db.field_for(field, book_id)
+            if field == 'authors':
+                if src == unknown_author():
+                    src = ()
+                if data == unknown_author():
+                    data = ()
+            lst = list(src)
+            for a in data:
+                if a not in lst:
+                    lst.append(a)
+            data = tuple(lst)
+            
+        update_map[field][book_id] = data
+    
+    for row in update_data:
+        for id in sorted(row.book_ids):
+            for k,v in row.data.items():
+                update(id, k, v)
+    
+    return update_map
 
 
 def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: OptionsUpdate) -> Set[int]:
