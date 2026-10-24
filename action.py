@@ -73,6 +73,7 @@ from .backend import (
     MatchType,
     OptionsUpdate,
     build_update_map,
+    build_update_row,
     export_csv_file,
     field_name,
     get_all_fields,
@@ -308,7 +309,8 @@ class UpdateDataProgress(QProgressDialog):
 
     def run_job(self):
         try:
-            update_map = build_update_map(self.data, self.match_type, self.options)
+            update_row = build_update_row(self.data, self.match_type, self.options)
+            update_map = build_update_map(update_row, self.options)
             update_ids = update_library_data(update_map, self.options)
         finally:
             self.close()

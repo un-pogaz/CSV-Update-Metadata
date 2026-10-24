@@ -148,25 +148,6 @@ class UpdateDataRow(NamedTuple):
     seek: DataCell
     data: Dict[str, DataCell]
     book_ids: Set[int]
-    
-    @staticmethod
-    def from_row(header: List[str], data_row: List[DataCell]) -> 'UpdateDataRow':
-        data = {}
-        for i, cell in enumerate(data_row):
-            if i == 0:
-                continue
-            if cell == '':
-                continue
-            data[header[i]] = cell
-        return UpdateDataRow(
-            seek=data_row[0],
-            data=data,
-            book_ids=set(),
-        )
-    
-    @staticmethod
-    def from_csv(data: CSVdata) -> List['UpdateDataRow']:
-        return [UpdateDataRow.from_row(data.headers, r) for r in data.rows]
 
 
 def get_all_fields() -> Set[str]:
@@ -676,41 +657,58 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], match_type: MatchTyp
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
 
-def build_update_map(data: CSVdata, match_type: MatchType, options: OptionsUpdate) -> Dict[str, Dict[str, DataCell]]:
+def build_update_row(data: CSVdata, match_type: MatchType, options: OptionsUpdate) -> List[UpdateDataRow]:
     if not data or not data.headers or not data.rows or len(data.headers) < 2:
-        return {}
+        return []
     
-    update_data = UpdateDataRow.from_csv(data)
+    def f(headers, data_row):
+        data = {}
+        for i, cell in enumerate(data_row):
+            if i == 0:
+                continue
+            if cell == '':
+                continue
+            data[headers[i]] = cell
+        return UpdateDataRow(
+            seek=data_row[0],
+            data=data,
+            book_ids=set(),
+        )
+    
+    update_data = [f(data.headers, r) for r in data.rows]
     process_book_ids(data.headers[0], update_data, match_type, options)
-    
+    return update_data
+
+
+def build_update_map(data: List[UpdateDataRow], options: OptionsUpdate) -> Dict[str, Dict[str, DataCell]]:
     db = current_db().new_api
     append_tags_value = options.append_tags_value
     
     x, tags_field, identifiers_field = get_special_field()
     update_map = defaultdict(dict)
     
-    def update(book_id, field, data):
+    def update(book_id, field, value):
         if field in identifiers_field:
             src = db.field_for(field, book_id)
-            src.update(data)
-            data = src
+            src.update(value)
+            value = src
         
         if field in tags_field and append_tags_value:
             src = db.field_for(field, book_id)
             if field == 'authors':
                 if src == unknown_author():
                     src = ()
-                if data == unknown_author():
-                    data = ()
+                if value == unknown_author():
+                    value = ()
             lst = list(src)
-            for a in data:
+            for a in value:
                 if a not in lst:
                     lst.append(a)
-            data = tuple(lst)
+            value = tuple(lst)
             
-        update_map[field][book_id] = data
+        update_map[field][book_id] = value
     
-    for row in update_data:
+    for row in data:
         for id in sorted(row.book_ids):
             for k,v in row.data.items():
                 update(id, k, v)
