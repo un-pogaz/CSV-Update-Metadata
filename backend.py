@@ -391,7 +391,7 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
                 tbl.append(adapters[f](row[c]))
             except Exception as err:
                 tbl.append(CSVdataError(
-                    c, r,
+                    c+1, r+1,
                     csv_data.headers[c],
                     field_name(f, fm),
                     err,
