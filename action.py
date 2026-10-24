@@ -505,6 +505,7 @@ class ViewCSVdataDialog(Dialog):
             for k,v in OptionsUpdate.items():
                 if getattr(self.options, k):
                     opt.append(v.label)
+            opt.append(_('Tags field: {}').format(self.options.tags_match.label))
         
         if opt:
             label = QLabel(_('Update options:')+' '+ ', '.join(opt))
