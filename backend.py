@@ -370,7 +370,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
 
 
 def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], options: OptionsUpdate) -> CSVdata:
-    series, tags, identifiers = get_special_field()
+    x, tags_field, identifiers_field = get_special_field()
     fm = current_db().field_metadata
     data = []
     errors = []
@@ -397,9 +397,9 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
             if v:
                 continue
             f, c = fields_map[i]
-            if f in identifiers:
+            if f in identifiers_field:
                 v = ''
-            if f in tags and options.append_tags_value:
+            if f in tags_field and options.append_tags_value:
                 v = ''
             tbl[i] = v
         
