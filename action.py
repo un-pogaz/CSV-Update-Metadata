@@ -72,6 +72,7 @@ from .backend import (
     CSVdataError,
     MatchType,
     OptionsUpdate,
+    TagsMatch,
     build_update_map,
     build_update_row,
     export_csv_file,
@@ -203,6 +204,11 @@ class UpdateOptionHelp(HtmlInfoDialog):
             _('<b>{}</b>: {}').format(e.label, e.description) for e in MatchType.__members__.values()
         )))
         self.append('p', _('If the cell of the seeked value is empty, the line is ignored.'))
+        self.append('p', _('Additionaly, the tags-like fields can be selected depending of the following criteria. '
+                        'Note that the case sensitivity option is also taken into account during this comparison.'))
+        self.append('', self.list_builder(*(
+            _('<b>{}</b>: {}').format(e.label, e.description) for e in TagsMatch.__members__.values()
+        )))
         self.append('hr', '')
         self.append('p', _('The following options allow to control how to update some specific field. '
                         'Note that these options are global and are apply to the entire file.'))
@@ -639,11 +645,13 @@ class UpdateCSVdialog(Dialog):
         self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
         self.match_type.currentIndexChanged.connect(self.match_type_changed)
         
+        self.tags_match = KeyValueComboBox({e:e.label for e in TagsMatch.__members__.values()}, self)
+        
         self.reference_selector = rs = QFormLayout()
         rs.addRow(_('CSV column to seek:'), self.reference_header)
         rs.addRow(_('Book field to match:'), self.reference_field)
-        self.reference_field_row = rs.rowCount()-1
         rs.addRow(_('Book match mode:'), self.match_type)
+        rs.addRow(_('Tag field match:'), self.tags_match)
         l.addLayout(rs)
         
         fl = FlowLayout()
@@ -741,8 +749,8 @@ class UpdateCSVdialog(Dialog):
 
     def match_type_changed(self, idx):
         hide = self.match_type.selected_key() not in MatchType.no_book_field()
-        self.options['tags_contain_value'].setVisible(hide)
-        self.reference_selector.setRowVisible(self.reference_field_row, hide)
+        self.reference_selector.setRowVisible(self.reference_field, hide)
+        self.reference_selector.setRowVisible(self.tags_match, hide)
 
     def get_data_update_map(self) -> Tuple[CSVdata, OptionsUpdate]:
         if not self.csv_data.headers or not self.csv_data.rows:
@@ -805,6 +813,7 @@ class UpdateCSVdialog(Dialog):
         
         options_map = {k:v.isChecked() for k,v in self.options.items()}
         options_map['match_type'] = self.match_type.selected_key()
+        options_map['tags_match'] = self.tags_match.selected_key()
         options = OptionsUpdate(**options_map)
         data = parse_update_data(
             self.csv_data,

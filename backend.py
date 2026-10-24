@@ -74,6 +74,40 @@ class MatchType(Enum):
         return {MatchType.search,}
 
 
+class TagsMatch(Enum):
+    equal = auto()
+    contain = auto()
+    subset = auto()
+    
+    @staticmethod
+    def _data() -> Dict['TagsMatch', Tuple[str, str]]:
+        return {
+            TagsMatch.equal: (
+                _('Equal'),
+                _('Only match books that have the <i>exact</i> same collection of values.'),
+            ),
+            TagsMatch.contain: (
+                _('Contain'),
+                _('Match any book that are equal or contain of the seeked values, regardeless if the book have more values.<br>'
+                'For example, the CSV value "green, blue" will macth any book with the same value, but also "green, blue, red".'),
+            ),
+            TagsMatch.subset: (
+                _('Subset'),
+                _('Match any book that are equal or a subset of the seeked values. Presence of any foreign value will '
+                'invalid the match.<br>For example, the CSV value "green, blue, red" will macth any book with the '
+                'same value, but also "green, blue", but not "green, blue, black".'),
+            ),
+        }
+    
+    @property
+    def label(self) -> str:
+        return TagsMatch._data()[self][0]
+    
+    @property
+    def description(self) -> str:
+        return TagsMatch._data()[self][1]
+
+
 @dataclass
 class CSVdataError:
     column: int
@@ -99,11 +133,11 @@ class OptionsUpdate(NamedTuple):
         description: str
     
     series_with_index: bool = False
-    tags_contain_value: bool = False
     append_tags_value: bool = False
     dont_change_case: bool = False
     
     match_type: MatchType = MatchType.insensitive_equal
+    tags_match: TagsMatch = TagsMatch.equal
     
     @staticmethod
     def _data() -> Dict[str, Item]:
@@ -112,13 +146,6 @@ class OptionsUpdate(NamedTuple):
                 _('Series-type fields include index'),
                 _('The value contain both the series name and the series index with the Calibre format "{}".')
                 .format(_('&lt;Series name&gt; [&lt;Index&gt;]')),
-            ),
-            'tags_contain_value': OptionsUpdate.Item(
-                _('Tags-type contain the values'),
-                _('When the plugin seek matching values on a Tags-type field, by default it only match books that have '
-                'the <i>exact</i> same collection of values than the one in the CSV. This option allow to match any book '
-                'that contain the seeked value, regardeless if the book have more values, instead of the exact collection.<br>'
-                'For example, the CSV value "green, blue" will macth any book with the same value, but also "green, blue, red".'),
             ),
             'append_tags_value': OptionsUpdate.Item(
                 _('Append value for tags-type fields'),
@@ -568,7 +595,7 @@ def _book_ids_many_one(db: Cache, field: str, rows: List[UpdateDataRow], case_se
         r.book_ids.update(book_ids)
 
 
-def _book_ids_many_many(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool, tags_contain_value: bool):
+def _book_ids_many_many(db: Cache, field: str, rows: List[UpdateDataRow], case_sensitive: bool, tags_match: TagsMatch):
     field_table = db.fields[field]
     if not isinstance(field_table, ManyToManyField):
         raise TypeError(f'Target field {field!r} is not a {ManyToManyField.__name__!r}')
@@ -578,8 +605,8 @@ def _book_ids_many_many(db: Cache, field: str, rows: List[UpdateDataRow], case_s
         flat_values.update(r.seek)
     
     key = case_sensitive_key(case_sensitive)
-    rmap = {key(v): k for k, v in field_table.table.id_map.items()}
-    item_map = {v: rmap.get(key(v), None) for v in flat_values}
+    key_map = {key(v): k for k, v in field_table.table.id_map.items()}
+    item_map = {v: key_map.get(key(v), None) for v in flat_values}
     
     cbm = field_table.table.col_book_map
     bcm = field_table.table.book_col_map
@@ -588,19 +615,23 @@ def _book_ids_many_many(db: Cache, field: str, rows: List[UpdateDataRow], case_s
         if not r.seek:
             continue
         
-        # filter intersection
         book_ids = set()
+        tags_set = set()
         for t in r.seek:
-            book_ids.update(cbm.get(item_map[t], set()))
-        for t in r.seek:
-            book_ids.intersection_update(cbm.get(item_map[t], set()))
+            book_ids.update(cbm.get(item_map[t]) or set())
+            tags_set.add(item_map[t])
         
-        # filter exact collections
-        if tags_contain_value:
-            f = None
-        else:
-            def f(x):
-                return len(bcm.get(x, ())) == len(r.seek)
+        def f(book_id):
+            book_set = set(bcm[book_id])
+            if tags_set == book_set:
+                return True
+            if tags_match == TagsMatch.contain:
+                return tags_set.issubset(book_set)
+            if tags_match == TagsMatch.subset:
+                intr = bool(tags_set.intersection(book_set))
+                diff = bool(book_set.difference(tags_set))
+                return intr and not diff
+            return False
         
         r.book_ids.update(filter(f, book_ids))
 
@@ -668,7 +699,7 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpda
             _book_ids_one_one(db, field, rows, case_sensitive=case_sensitive)
             return
         if isinstance(field_table, ManyToManyField):
-            _book_ids_many_many(db, field, rows, case_sensitive=case_sensitive, tags_contain_value=options.tags_contain_value)
+            _book_ids_many_many(db, field, rows, case_sensitive=case_sensitive, tags_match=options.tags_match)
             return
     
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
