@@ -291,9 +291,8 @@ class CSVMetadataAction(InterfaceAction):
 
 
 class UpdateDataProgress(QProgressDialog):
-    def __init__(self, data: CSVdata, match_type: MatchType, options: OptionsUpdate):
+    def __init__(self, data: CSVdata, options: OptionsUpdate):
         self.data = data
-        self.match_type = match_type
         self.options = options
         QProgressDialog.__init__(self, '', None, 0, 0, get_gui())
         self.setMinimumWidth(500)
@@ -309,7 +308,7 @@ class UpdateDataProgress(QProgressDialog):
 
     def run_job(self):
         try:
-            update_row = build_update_row(self.data, self.match_type, self.options)
+            update_row = build_update_row(self.data, self.options)
             update_map = build_update_map(update_row, self.options)
             update_ids = update_library_data(update_map, self.options)
         finally:
@@ -476,14 +475,12 @@ class ViewCSVdataDialog(Dialog):
     def __init__(
         self,
         data: CSVdata,
-        match_type: MatchType = None,
         options: OptionsUpdate = None,
         validate: bool=False,
         has_reference: bool=False,
         parent=None,
     ):
         self.data = data
-        self.match_type = match_type
         self.options = options
         self.validate = validate
         self.has_reference = has_reference
@@ -498,9 +495,8 @@ class ViewCSVdataDialog(Dialog):
         self.setLayout(l)
         
         opt = []
-        if self.match_type:
-            opt.append(self.match_type.label)
         if self.options:
+            opt.append(self.options.match_type.label)
             for k,v in OptionsUpdate.items():
                 if getattr(self.options, k):
                     opt.append(v.label)
@@ -586,7 +582,7 @@ class UpdateCSVdialog(Dialog):
         self.csv_path = csv_path
         self.csv_data = data
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
-        self.output: Tuple[CSVdata, MatchType, OptionsUpdate] = None
+        self.output: Tuple[CSVdata, OptionsUpdate] = None
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -750,7 +746,7 @@ class UpdateCSVdialog(Dialog):
         self.options['tags_contain_value'].setVisible(hide)
         self.reference_selector.setRowVisible(self.reference_field_row, hide)
 
-    def get_data_update_map(self) -> Tuple[CSVdata, MatchType, OptionsUpdate]:
+    def get_data_update_map(self) -> Tuple[CSVdata, OptionsUpdate]:
         if not self.csv_data.headers or not self.csv_data.rows:
             error_dialog(
                 self,
@@ -808,14 +804,14 @@ class UpdateCSVdialog(Dialog):
                 fields_map.append((k, i))
         
         options_map = {k:v.isChecked() for k,v in self.options.items()}
+        options_map['match_type'] = self.match_type.selected_key()
         options = OptionsUpdate(**options_map)
-        match_type = self.match_type.selected_key()
         data = parse_update_data(
             self.csv_data,
             fields_map,
             options,
         )
-        return data, match_type, options
+        return data, options
 
     def accept(self):
         rslt = self.preview_update_data(validate=True)
@@ -824,11 +820,11 @@ class UpdateCSVdialog(Dialog):
         self.output = rslt
         Dialog.accept(self)
 
-    def preview_update_data(self, validate: bool=False) ->  Tuple[CSVdata, MatchType, OptionsUpdate]:
+    def preview_update_data(self, validate: bool=False) ->  Tuple[CSVdata, OptionsUpdate]:
         rslt = self.get_data_update_map()
         if not rslt:
             return None
-        data, match_type, options = rslt
+        data, options = rslt
         if validate and data.errors:
             error_dialog(
                 self,
@@ -844,7 +840,6 @@ class UpdateCSVdialog(Dialog):
         
         d = ViewCSVdataDialog(
             parse_preview_data(data),
-            match_type,
             options,
             validate=validate,
             has_reference=True,
@@ -852,4 +847,4 @@ class UpdateCSVdialog(Dialog):
         ).exec()
         if d != Dialog.DialogCode.Accepted or data.errors:
             return None
-        return data, match_type, options
+        return data, options

@@ -105,6 +105,8 @@ class OptionsUpdate(NamedTuple):
     append_tags_value: bool = False
     dont_change_case: bool = False
     
+    match_type: MatchType = MatchType.insensitive_equal
+    
     @staticmethod
     def _data() -> Dict[str, Item]:
         return {
@@ -609,13 +611,13 @@ def _book_ids_search(db: Cache, rows: List[UpdateDataRow]):
         r.book_ids.update(db.search(r.seek))
 
 
-def process_book_ids(field: str, rows: List[UpdateDataRow], match_type: MatchType, options: OptionsUpdate) -> List[List[int]]:
+def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpdate) -> List[List[int]]:
     db = current_db().new_api
     
     if field == MatchType.search:
         return _book_ids_search(db, rows)
     
-    case_sensitive = match_type == MatchType.strict_equal
+    case_sensitive = options.match_type == MatchType.strict_equal
     
     if field == 'id':
         return [list(filter(db.has_id, (r.seek,))) for r in rows]
@@ -661,7 +663,7 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], match_type: MatchTyp
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
 
-def build_update_row(data: CSVdata, match_type: MatchType, options: OptionsUpdate) -> List[UpdateDataRow]:
+def build_update_row(data: CSVdata, options: OptionsUpdate) -> List[UpdateDataRow]:
     if not data or not data.headers or not data.rows or len(data.headers) < 2:
         return []
     
@@ -680,7 +682,7 @@ def build_update_row(data: CSVdata, match_type: MatchType, options: OptionsUpdat
         )
     
     update_data = [f(data.headers, r) for r in data.rows]
-    process_book_ids(data.headers[0], update_data, match_type, options)
+    process_book_ids(data.headers[0], update_data, options)
     return update_data
 
 
