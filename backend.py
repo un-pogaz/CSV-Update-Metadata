@@ -73,11 +73,11 @@ class MatchType(Enum):
     
     @property
     def label(self) -> str:
-        return MatchType._data()[self][0]
+        return self._data()[self][0]
     
     @property
     def description(self) -> str:
-        return MatchType._data()[self][1]
+        return self._data()[self][1]
     
     @staticmethod
     def no_book_field() -> Set['MatchType']:
@@ -111,7 +111,7 @@ class TagsMatch(Enum):
     
     @property
     def label(self) -> str:
-        return TagsMatch._data()[self][0]
+        return self._data()[self][0]
     
     @property
     def description(self) -> str:
@@ -365,8 +365,6 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CS
         2) skip empty blank lines (0 value)
         3) strip headers and values
     '''
-    from .action import CSV
-    
     # pass the file reader without newline detection
     # csv.reader handle universal newline sheniganies
     with open(csv_path, newline='', encoding='utf-8') as f:
