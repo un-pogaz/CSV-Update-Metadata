@@ -68,6 +68,10 @@ class MatchType(Enum):
     @property
     def description(self) -> str:
         return MatchType._data()[self][1]
+    
+    @staticmethod
+    def no_book_field() -> Set['MatchType']:
+        return {MatchType.search,}
 
 
 @dataclass
@@ -201,8 +205,8 @@ def get_special_field() -> Tuple[Set[str], Set[str], Set[str]]:
 
 
 def field_name(field: str, field_metadata: Dict) -> str:
-    if field == MatchType.search:
-        return MatchType.search.label
+    if isinstance(field, MatchType):
+        return field.label
     name = None
     if field == 'isbn':
         name = 'ISBN'

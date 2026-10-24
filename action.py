@@ -741,8 +741,7 @@ class UpdateCSVdialog(Dialog):
         UpdateOptionHelp(self).exec()
 
     def match_type_changed(self, idx):
-        hide = self.match_type.selected_key() != MatchType.search
-        self.options['series_with_index'].setVisible(hide)
+        hide = self.match_type.selected_key() not in MatchType.no_book_field()
         self.options['tags_contain_value'].setVisible(hide)
         self.reference_selector.setRowVisible(self.reference_field_row, hide)
 
@@ -766,7 +765,9 @@ class UpdateCSVdialog(Dialog):
                 show_copy_button=False,
             )
             return None
-        if self.reference_field.currentIndex() == -1 and self.match_type.selected_key() != MatchType.search:
+        
+        no_book_field = self.match_type.selected_key() in MatchType.no_book_field()
+        if not no_book_field and self.reference_field.currentIndex() == -1:
             error_dialog(
                 self,
                 _('No reference field selected'),
@@ -781,8 +782,8 @@ class UpdateCSVdialog(Dialog):
         data_map = []
         
         data_map.append(self.reference_header.currentIndex())
-        if self.match_type.selected_key() == MatchType.search:
-            field = MatchType.search
+        if no_book_field:
+            field = self.match_type.selected_key()
         else:
             field = self.reference_field.selected_key()
         fields_map.append((field, self.reference_header.currentIndex()))
