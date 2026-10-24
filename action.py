@@ -116,7 +116,7 @@ class HtmlInfoDialog(Dialog):
     def setup_ui(self):
         l = QVBoxLayout(self)
         self.setLayout(l)
-        l.addLayout(ImageTitleLayout(self.icon, self.header, self))
+        l.addLayout(ImageTitleLayout(self.icon, self.header))
         self.body = HTMLDisplay(self)
         l.addWidget(self.body)
         self.rslt = []
