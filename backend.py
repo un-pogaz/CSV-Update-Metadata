@@ -23,7 +23,7 @@ from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField,
 from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
-from .common_utils import CALIBRE_VERSION, current_db, debug_print, get_gui
+from .common_utils import CALIBRE_VERSION, current_db, get_gui
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
 
@@ -36,6 +36,16 @@ class CSV(csv.Dialect):
     doublequote = True
     lineterminator = '\n'
     quoting = csv.QUOTE_ALL
+
+
+CSV_CODE = '''\
+class CSV(csv.Dialect):
+    delimiter = ','
+    quotechar = '"'
+    doublequote = True
+    lineterminator = '\n'
+    quoting = csv.QUOTE_ALL
+'''
 
 
 class MatchType(Enum):

@@ -66,7 +66,7 @@ from calibre.gui2.widgets2 import Dialog, FlowLayout, HTMLDisplay
 from calibre.utils.icu import sort_key
 
 from .backend import (
-    CSV,
+    CSV_CODE,
     NULL,
     CSVdata,
     CSVdataError,
@@ -150,10 +150,6 @@ class CSVformatDialog(HtmlInfoDialog):
     header = _('CSV format')
     
     def setup_html(self):
-        import inspect
-        lines, num = inspect.getsourcelines(CSV)
-        csv_code = ''.join(lines)
-        
         self.append('p', _('A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. '
                       'A CSV file stores tabular data in plain text. Each line of the file is a data rows. '
                       'Each rows consists of one or more values, separated by commas. '
@@ -180,7 +176,7 @@ class CSVformatDialog(HtmlInfoDialog):
         self.append('hr', '')
         self.append('p', _('The plugin use the default library <code>csv</code> to import and convert files. '
                       'For reference, here the code of <code>csv.Dialect</code> class used:'))
-        self.append('pre', csv_code)
+        self.append('pre', CSV_CODE)
 
 
 class UpdateOptionsHelp(HtmlInfoDialog):
