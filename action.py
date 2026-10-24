@@ -183,9 +183,9 @@ class CSVformatDialog(HtmlInfoDialog):
         self.append('pre', csv_code)
 
 
-class UpdateOptionHelp(HtmlInfoDialog):
-    title = _('Update option help')
-    header = _('Update option')
+class UpdateOptionsHelp(HtmlInfoDialog):
+    title = _('Update options help')
+    header = _('Update options')
     icon = 'dialog_information.png'
     
     def setup_html(self):
@@ -619,7 +619,7 @@ class UpdateCSVdialog(Dialog):
         
         self.button_show_help = QPushButton(get_icon('dialog_information.png'), '', self)
         self.button_show_help.setToolTip(_('Show the help about the options and the update policies.'))
-        self.button_show_help.clicked.connect(self.show_option_help)
+        self.button_show_help.clicked.connect(self.show_options_help)
         
         button_layout.addStretch()
         button_layout.addWidget(self.button_show_help)
@@ -744,8 +744,8 @@ class UpdateCSVdialog(Dialog):
     def preview_data(self):
         self.preview_update_data(validate=False)
 
-    def show_option_help(self):
-        UpdateOptionHelp(self).exec()
+    def show_options_help(self):
+        UpdateOptionsHelp(self).exec()
 
     def match_type_changed(self, idx):
         hide = self.match_type.selected_key() not in MatchType.no_book_field()
