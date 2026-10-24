@@ -650,23 +650,25 @@ class UpdateCSVdialog(Dialog):
         self.reference_field = KeyValueComboBox(seekable_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
         
-        self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
-        self.tags_match = KeyValueComboBox({e:e.label for e in TagsMatch.__members__.values()}, self)
-        self.update_scope = KeyValueComboBox({e:e.label for e in UpdateScope.__members__.values()}, self)
-        self.match_type.currentIndexChanged.connect(self.match_type_changed)
-        
         self.reference_selector = rs = QFormLayout()
+        l.addLayout(rs)
         rs.addRow(_('CSV column to seek:'), self.reference_header)
         rs.addRow(_('Book field to match:'), self.reference_field)
-        rs.addRow(_('Book match mode:'), self.match_type)
-        rs.addRow(_('Tag field match:'), self.tags_match)
-        rs.addRow(_('Update scope:'), self.update_scope)
-        l.addLayout(rs)
+        
+        self.options = {}
+        enum_map = {
+            'match_type': (_('Book match mode:'), MatchType),
+            'tags_match': (_('Tag field match:'), TagsMatch),
+            'update_scope': (_('Update scope:'), UpdateScope),
+        }
+        for k,(t,v) in enum_map.items():
+            self.options[k] = w = KeyValueComboBox({e:e.label for e in v.__members__.values()}, self)
+            rs.addRow(t, w)
+        self.options['match_type'].currentIndexChanged.connect(self.match_type_changed)
         
         fl = FlowLayout()
         l.addLayout(fl)
         
-        self.options = {}
         for k,v in OptionsUpdate.items():
             self.options[k] = w = QCheckBox(v.label, self)
             fl.addWidget(w)
@@ -757,9 +759,9 @@ class UpdateCSVdialog(Dialog):
         UpdateOptionsHelp(self).exec()
 
     def match_type_changed(self, idx):
-        hide = self.match_type.selected_key() not in MatchType.no_book_field()
+        hide = self.options['match_type'].selected_key() not in MatchType.no_book_field()
         self.reference_selector.setRowVisible(self.reference_field, hide)
-        self.reference_selector.setRowVisible(self.tags_match, hide)
+        self.reference_selector.setRowVisible(self.options['tags_match'], hide)
 
     def get_data_update_map(self) -> Tuple[CSVdata, OptionsUpdate]:
         if not self.csv_data.headers or not self.csv_data.rows:
@@ -782,7 +784,7 @@ class UpdateCSVdialog(Dialog):
             )
             return None
         
-        no_book_field = self.match_type.selected_key() in MatchType.no_book_field()
+        no_book_field = self.options['match_type'].selected_key() in MatchType.no_book_field()
         if not no_book_field and self.reference_field.currentIndex() == -1:
             error_dialog(
                 self,
@@ -799,7 +801,7 @@ class UpdateCSVdialog(Dialog):
         
         data_map.append(self.reference_header.currentIndex())
         if no_book_field:
-            field = self.match_type.selected_key()
+            field = self.options['match_type'].selected_key()
         else:
             field = self.reference_field.selected_key()
         fields_map.append((field, self.reference_header.currentIndex()))
@@ -820,10 +822,13 @@ class UpdateCSVdialog(Dialog):
                     return None
                 fields_map.append((k, i))
         
-        options_map = {k:v.isChecked() for k,v in self.options.items()}
-        options_map['match_type'] = self.match_type.selected_key()
-        options_map['tags_match'] = self.tags_match.selected_key()
-        options_map['update_scope'] = self.update_scope.selected_key()
+        options_map = {}
+        for k,w in self.options.items():
+            if isinstance(w, KeyValueComboBox):
+                options_map[k] = w.selected_key()
+            if isinstance(w, QCheckBox):
+                options_map[k] = w.isChecked()
+        
         options = OptionsUpdate(**options_map)
         data = parse_update_data(
             self.csv_data,
