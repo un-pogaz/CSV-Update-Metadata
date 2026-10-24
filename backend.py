@@ -268,7 +268,7 @@ def unknown_author():
     return get_adapter('authors', metadata)(None)
 
 
-def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> Callable:
+def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> Callable[[str], DataCell]:
     from calibre.db.write import get_adapter
     
     if name == MatchType.search:
@@ -282,12 +282,21 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
         return ans
     
     if name == 'isbn':
-        return _parse_isbn
-    metadata = field_metadata[name]
-    if metadata['datatype'] == 'series' and series_with_index:
-        return _series_with_index
-    adapter = get_adapter(name, metadata)
-    def f(x):
+        metadata = defaultdict(dict)
+        adapter =  _parse_isbn
+    else:
+        metadata = field_metadata[name]
+        if metadata['datatype'] == 'series' and series_with_index:
+            adapter = _series_with_index
+        else:
+            adapter = get_adapter(name, metadata)
+    
+    def ans(x):
+        if x == '':
+            return ''
+        elif x == NULL:
+            return None
+        
         rslt = adapter(x)
         if metadata['datatype'] == 'rating' and rslt == 0:
             return None
@@ -306,7 +315,7 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
                 if v == NULL or not v:
                     rslt[k] = None
         return rslt
-    return f
+    return ans
 
 
 def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CSVdata:
@@ -378,20 +387,15 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
     for r,row in enumerate(csv_data.rows):
         tbl = []
         for f,c in fields_map:
-            if row[c] == '':
-                tbl.append('')
-            elif row[c] == NULL:
-                tbl.append(None)
-            else:
-                try:
-                    tbl.append(adapters[f](row[c]))
-                except Exception as err:
-                    tbl.append(CSVdataError(
-                        c, r,
-                        csv_data.headers[c],
-                        field_name(f, fm),
-                        err,
-                    ))
+            try:
+                tbl.append(adapters[f](row[c]))
+            except Exception as err:
+                tbl.append(CSVdataError(
+                    c, r,
+                    csv_data.headers[c],
+                    field_name(f, fm),
+                    err,
+                ))
         
         for i,v in enumerate(tbl):
             if v:
