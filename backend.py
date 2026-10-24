@@ -611,11 +611,12 @@ def _book_ids_search(db: Cache, rows: List[UpdateDataRow]):
         r.book_ids.update(db.search(r.seek))
 
 
-def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpdate) -> List[List[int]]:
+def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpdate):
     db = current_db().new_api
     
     if field == MatchType.search:
-        return _book_ids_search(db, rows)
+        _book_ids_search(db, rows)
+        return
     
     case_sensitive = options.match_type == MatchType.strict_equal
     
@@ -627,38 +628,41 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpda
         return [list(filter(None, (u,))) for u in map(f, rows)]
     if field == 'isbn':
         tbl = [r._replace(seek={'isbn': r.seek}) for r in rows]
-        return _book_ids_identifiers(db, 'identifiers', tbl, case_sensitive=case_sensitive)
+        _book_ids_identifiers(db, 'identifiers', tbl, case_sensitive=case_sensitive)
+        return
     
     field_table = db.fields[field]
     if isinstance(field_table, IdentifiersField):
-        return _book_ids_identifiers(db, field, rows, case_sensitive=case_sensitive)
+        _book_ids_identifiers(db, field, rows, case_sensitive=case_sensitive)
+        return
     if isinstance(field_table, SeriesField):
-        return _book_ids_series(db, field, rows, case_sensitive=case_sensitive, series_with_index=options.series_with_index)
+        _book_ids_series(db, field, rows, case_sensitive=case_sensitive, series_with_index=options.series_with_index)
+        return
     
     fm = db.field_metadata[field]
     dt = fm['datatype']
     
     if dt in {'int', 'float', 'bool'}:
-        return _book_ids_one_one(db, field, rows, case_sensitive=None)
+        _book_ids_one_one(db, field, rows, case_sensitive=None)
+        return
     
     if dt in {'rating'}:
-        return _book_ids_many_one(db, field, rows, case_sensitive=None)
+        _book_ids_many_one(db, field, rows, case_sensitive=None)
+        return
     if dt in {'enumeration'}:
-        return _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
+        _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
+        return
     
     if dt == 'text':
         if isinstance(field_table, ManyToOneField):
-            return _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
+            _book_ids_many_one(db, field, rows, case_sensitive=case_sensitive)
+            return
         if isinstance(field_table, OneToOneField):
-            return _book_ids_one_one(db, field, rows, case_sensitive=case_sensitive)
+            _book_ids_one_one(db, field, rows, case_sensitive=case_sensitive)
+            return
         if isinstance(field_table, ManyToManyField):
-            return _book_ids_many_many(
-                db,
-                field,
-                rows,
-                case_sensitive=case_sensitive,
-                tags_contain_value=options.tags_contain_value,
-            )
+            _book_ids_many_many(db, field, rows, case_sensitive=case_sensitive, tags_contain_value=options.tags_contain_value)
+            return
     
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
