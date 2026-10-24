@@ -48,7 +48,7 @@ class MatchType(Enum):
         return {
             MatchType.insensitive_equal: (
                 _('Case insensitive equal'),
-                _('Will match the complete seeked value, regardeless of the case. Calibre default behavior.'),
+                _('Will match the seeked value, regardeless of the case. Calibre default behavior.'),
             ),
             MatchType.strict_equal: (
                 _('Case sensitive equal'),
