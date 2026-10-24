@@ -155,8 +155,8 @@ class CSVformatDialog(HtmlInfoDialog):
         csv_code = ''.join(lines)
         
         self.append('p', _('A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. '
-                      'A CSV file stores tabular data in plain text. Each line of the file is a data record. '
-                      'Each record consists of one or more values, separated by commas. '
+                      'A CSV file stores tabular data in plain text. Each line of the file is a data rows. '
+                      'Each rows consists of one or more values, separated by commas. '
                       'The use of the comma as a value separator is the source of the name for this file format.'))
         self.append('p', _('Due to the lack of a strict CSV specification, different applications produce subtly different '
                         'CSV file, but this plugin can tolerate some of such difference as input.'))
@@ -197,7 +197,6 @@ class UpdateOptionsHelp(HtmlInfoDialog):
         self.append('p', _('The field "Identifiers" behave a bit differently, since it require a <code>id:value</code> pair '
                         'to represent a value and that a sole id without a value is ignored. Therefore, to delete '
                         'a identifier, you need to used "id:NULL" to delete this id.'))
-        self.append('hr', '')
         self.append('p', _('To update the metadata, you need to specified wich columns of CSV values the plugin need '
                         'to seek in the library, and wich field this values need to match, depending of several mode:'))
         self.append('', self.list_builder(*(
@@ -209,7 +208,12 @@ class UpdateOptionsHelp(HtmlInfoDialog):
         self.append('', self.list_builder(*(
             _('<b>{}</b>: {}').format(e.label, e.description) for e in TagsMatch.__members__.values()
         )))
-        self.append('hr', '')
+        self.append('p', _('Once the book search options have been configured, you need to define wich columns '
+                        'of the CSV file will serve as source for update the fields on the library. '
+                        'A field can be selected as destination only once.'))
+        self.append('p', _('During the update, the plugin will process to update the rows up to down, '
+                        'consequently if multiple rows modify the same book, the one at the bottom '
+                        'of the file will take the precedent.'))
         self.append('p', _('The following options allow to control how to update some specific field. '
                         'Note that these options are global and are apply to the entire file.'))
         self.append('', self.list_builder(*(
