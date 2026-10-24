@@ -248,7 +248,7 @@ def get_writable_fields() -> Set[str]:
     return rslt.difference(('library_name', 'id', 'uuid', 'size', 'pages'))
 
 
-def get_special_field() -> Tuple[Set[str], Set[str], Set[str]]:
+def get_special_fields() -> Tuple[Set[str], Set[str], Set[str]]:
     db = current_db().new_api
     series_field = set()
     tags_field = set()
@@ -436,7 +436,7 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
 
 
 def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], options: OptionsUpdate) -> CSVdata:
-    x, tags_field, identifiers_field = get_special_field()
+    x, tags_field, identifiers_field = get_special_fields()
     fm = current_db().field_metadata
     data = []
     errors = []
@@ -779,7 +779,7 @@ def build_update_map(data: List[UpdateDataRow], options: OptionsUpdate) -> Dict[
     db = current_db().new_api
     append_tags_value = options.append_tags_value
     
-    x, tags_field, identifiers_field = get_special_field()
+    x, tags_field, identifiers_field = get_special_fields()
     update_map = defaultdict(dict)
     
     def update(book_id, field, value):
@@ -816,7 +816,7 @@ def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: Opt
     allow_case_change = not options.dont_change_case
     series_with_index = options.series_with_index
     
-    series_field, x, x = get_special_field()
+    series_field, x, x = get_special_fields()
     # ensure that the series index are updated after the series name
     update_index_map = uim = defaultdict(dict)
     for series in series_field:
