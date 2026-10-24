@@ -73,6 +73,7 @@ from .backend import (
     MatchType,
     OptionsUpdate,
     TagsMatch,
+    UpdateScope,
     build_update_map,
     build_update_row,
     export_csv_file,
@@ -85,7 +86,7 @@ from .backend import (
     parse_update_data,
     update_library_data,
 )
-from .common_utils import PLUGIN_NAME, PREFS_json, PREFS_library, current_db, get_gui, get_icon
+from .common_utils import PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_gui, get_icon
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
@@ -214,6 +215,10 @@ class UpdateOptionsHelp(HtmlInfoDialog):
                         'Note that these options are global and are apply to the entire file.'))
         self.append('', self.list_builder(*(
             _('<b>{}</b>: {}').format(e.label, e.description) for e in OptionsUpdate.values()
+        )))
+        self.append('p', _("It's also possible to restrain the update to a specific scope of books."))
+        self.append('', self.list_builder(*(
+            _('<b>{}</b>').format(e.label) for e in UpdateScope.__members__.values()
         )))
 
 
@@ -506,6 +511,8 @@ class ViewCSVdataDialog(Dialog):
                 if getattr(self.options, k):
                     opt.append(v.label)
             opt.append(_('Tags field: {}').format(self.options.tags_match.label))
+            if self.options.update_scope != UpdateScope.library:
+                opt.append(_('Update scope: {}').format(self.options.update_scope.label))
         
         if opt:
             label = QLabel(_('Update options:')+' '+ ', '.join(opt))
@@ -644,15 +651,16 @@ class UpdateCSVdialog(Dialog):
         self.reference_field.setCurrentIndex(-1)
         
         self.match_type = KeyValueComboBox({e:e.label for e in MatchType.__members__.values()}, self)
-        self.match_type.currentIndexChanged.connect(self.match_type_changed)
-        
         self.tags_match = KeyValueComboBox({e:e.label for e in TagsMatch.__members__.values()}, self)
+        self.update_scope = KeyValueComboBox({e:e.label for e in UpdateScope.__members__.values()}, self)
+        self.match_type.currentIndexChanged.connect(self.match_type_changed)
         
         self.reference_selector = rs = QFormLayout()
         rs.addRow(_('CSV column to seek:'), self.reference_header)
         rs.addRow(_('Book field to match:'), self.reference_field)
         rs.addRow(_('Book match mode:'), self.match_type)
         rs.addRow(_('Tag field match:'), self.tags_match)
+        rs.addRow(_('Update scope:'), self.update_scope)
         l.addLayout(rs)
         
         fl = FlowLayout()
@@ -815,6 +823,7 @@ class UpdateCSVdialog(Dialog):
         options_map = {k:v.isChecked() for k,v in self.options.items()}
         options_map['match_type'] = self.match_type.selected_key()
         options_map['tags_match'] = self.tags_match.selected_key()
+        options_map['update_scope'] = self.update_scope.selected_key()
         options = OptionsUpdate(**options_map)
         data = parse_update_data(
             self.csv_data,

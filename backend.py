@@ -24,6 +24,7 @@ from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
 from .common_utils import CALIBRE_VERSION, current_db, get_gui
+from .common_utils.librarys import get_BookIds_search, get_BookIds_selected, get_BookIds_virtual
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
 
@@ -118,6 +119,26 @@ class TagsMatch(Enum):
         return TagsMatch._data()[self][1]
 
 
+class UpdateScope(Enum):
+    library = auto()
+    virtual = auto()
+    search = auto()
+    select = auto()
+    
+    @staticmethod
+    def _data() -> Dict['UpdateScope', str]:
+        return {
+            UpdateScope.library: _('No restrain'),
+            UpdateScope.virtual: _('Virtual library'),
+            UpdateScope.search: _('Current search'),
+            UpdateScope.select: _('Selection'),
+        }
+    
+    @property
+    def label(self) -> str:
+        return self._data()[self]
+
+
 @dataclass
 class CSVdataError:
     column: int
@@ -148,6 +169,7 @@ class OptionsUpdate(NamedTuple):
     
     match_type: MatchType = MatchType.insensitive_equal
     tags_match: TagsMatch = TagsMatch.equal
+    update_scope: UpdateScope = UpdateScope.library
     
     @staticmethod
     def _data() -> Dict[str, Item]:
@@ -713,6 +735,22 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpda
     raise NotImplementedError(_('The type of the field {!r} is not supported.').format(field))
 
 
+def restrain_book_ids(rows: List[UpdateDataRow], update_scope: UpdateScope):
+    if update_scope == UpdateScope.library:
+        return
+    
+    scope_book_ids = set()
+    if update_scope == UpdateScope.virtual:
+        scope_book_ids = set(get_BookIds_virtual(False))
+    if update_scope == UpdateScope.search:
+        scope_book_ids = set(get_BookIds_search(False))
+    if update_scope == UpdateScope.select:
+        scope_book_ids = set(get_BookIds_selected(False))
+    
+    for r in rows:
+        r.book_ids.intersection_update(scope_book_ids)
+
+
 def build_update_row(data: CSVdata, options: OptionsUpdate) -> List[UpdateDataRow]:
     if not data or not data.headers or not data.rows or len(data.headers) < 2:
         return []
@@ -733,6 +771,7 @@ def build_update_row(data: CSVdata, options: OptionsUpdate) -> List[UpdateDataRo
     
     update_data = [f(data.headers, r) for r in data.rows]
     process_book_ids(data.headers[0], update_data, options)
+    restrain_book_ids(update_data, options.update_scope)
     return update_data
 
 
