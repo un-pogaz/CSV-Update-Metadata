@@ -621,11 +621,16 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpda
     case_sensitive = options.match_type == MatchType.strict_equal
     
     if field == 'id':
-        return [list(filter(db.has_id, (r.seek,))) for r in rows]
+        for r in rows:
+            if db.has_id(r.seek):
+                r.book_ids.add(r.seek)
+        return
     if field == 'uuid':
-        def f(r: UpdateDataRow):
-            return db.lookup_by_uuid(r.seek.lower())
-        return [list(filter(None, (u,))) for u in map(f, rows)]
+        for r in rows:
+            id = db.lookup_by_uuid(r.seek.lower())
+            if id:
+                r.book_ids.add(id)
+        return
     if field == 'isbn':
         tbl = [r._replace(seek={'isbn': r.seek}) for r in rows]
         _book_ids_identifiers(db, 'identifiers', tbl, case_sensitive=case_sensitive)
