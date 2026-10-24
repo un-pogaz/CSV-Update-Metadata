@@ -80,6 +80,7 @@ from .backend import (
     field_name,
     get_all_fields,
     get_seekable_fields,
+    get_special_fields,
     get_writable_fields,
     load_csv_file,
     parse_preview_data,
@@ -506,11 +507,16 @@ class ViewCSVdataDialog(Dialog):
         
         opt = []
         if self.options:
+            fm = current_db().field_metadata
+            x, tags_field, x = get_special_fields()
+            tags_field = {field_name(n, fm) for n in tags_field}
+            
             opt.append(self.options.match_type.label)
             for k,v in OptionsUpdate.items():
                 if getattr(self.options, k):
                     opt.append(v.label)
-            opt.append(_('Tags field: {}').format(self.options.tags_match.label))
+            if self.data.headers[0] in tags_field:
+                opt.append(_('Tags field: {}').format(self.options.tags_match.label))
             if self.options.update_scope != UpdateScope.library:
                 opt.append(_('Update scope: {}').format(self.options.update_scope.label))
         
@@ -646,6 +652,8 @@ class UpdateCSVdialog(Dialog):
             key=lambda x:sort_key(x[1]),
         ))
         
+        x, self.tags_field, x = get_special_fields()
+        
         self.reference_header = NoWheelComboBox(self)
         self.reference_field = KeyValueComboBox(seekable_fields, parent=self)
         self.reference_field.setCurrentIndex(-1)
@@ -654,6 +662,7 @@ class UpdateCSVdialog(Dialog):
         l.addLayout(rs)
         rs.addRow(_('CSV column to seek:'), self.reference_header)
         rs.addRow(_('Book field to match:'), self.reference_field)
+        self.reference_field.currentIndexChanged.connect(self.reference_field_changed)
         
         self.options = {}
         enum_map = {
@@ -665,6 +674,7 @@ class UpdateCSVdialog(Dialog):
             self.options[k] = w = KeyValueComboBox({e:e.label for e in v.__members__.values()}, self)
             rs.addRow(t, w)
         self.options['match_type'].currentIndexChanged.connect(self.match_type_changed)
+        self.reference_selector.setRowVisible(self.options['tags_match'], False)
         
         fl = FlowLayout()
         l.addLayout(fl)
@@ -758,10 +768,16 @@ class UpdateCSVdialog(Dialog):
     def show_options_help(self):
         UpdateOptionsHelp(self).exec()
 
+    def reference_field_changed(self, idx):
+        visible = self.reference_field.selected_key() in self.tags_field
+        if self.options['match_type'].selected_key() in MatchType.no_book_field():
+            visible = False
+        self.reference_selector.setRowVisible(self.options['tags_match'], visible)
+
     def match_type_changed(self, idx):
-        hide = self.options['match_type'].selected_key() not in MatchType.no_book_field()
-        self.reference_selector.setRowVisible(self.reference_field, hide)
-        self.reference_selector.setRowVisible(self.options['tags_match'], hide)
+        visible = self.options['match_type'].selected_key() not in MatchType.no_book_field()
+        self.reference_selector.setRowVisible(self.reference_field, visible)
+        self.reference_field_changed(-1)
 
     def get_data_update_map(self) -> Tuple[CSVdata, OptionsUpdate]:
         if not self.csv_data.headers or not self.csv_data.rows:
