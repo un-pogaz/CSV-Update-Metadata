@@ -41,7 +41,6 @@ class CSV(csv.Dialect):
 class MatchType(Enum):
     insensitive_equal = auto()
     strict_equal = auto()
-    # TODO: regex = auto()
     search = auto()
     
     @staticmethod
@@ -55,11 +54,6 @@ class MatchType(Enum):
                 _('Case sensitive equal'),
                 _('Strictly match the seeked value, with taking account of the case.'),
             ),
-            # MatchType.regex: (
-            #     _('Regular expressions'),
-            #     _('Use <a href="{}">Python regular expressions</a>.')
-            #     .format('https://docs.python.org/library/re.html#regular-expression-syntax'),
-            # ),
             MatchType.search: (
                 _('Calibre search'),
                 _('Use the <a href="{}">Calibre search engine</a>. No book field to match is required for this mode.')
