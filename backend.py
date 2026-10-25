@@ -464,10 +464,6 @@ def parse_update_data(csv_data: CSVdata, fields_map: List[Tuple[str, int]], opti
                 v = ''
             tbl[i] = v
         
-        if tbl.count('') == len(tbl)-1:
-            # skip empty row to update
-            continue
-        
         if isinstance(tbl[0], (int, float, bool)) or tbl[0]:
             data.append(tbl)
             errors.extend(e for e in tbl if isinstance(e, CSVdataError))
