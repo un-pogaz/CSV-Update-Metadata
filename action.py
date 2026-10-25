@@ -631,7 +631,7 @@ class UpdateCSVdialog(Dialog):
         self.button_reload_data.setToolTip(_('Reload the content from the CSV file.'))
         self.button_reload_data.clicked.connect(self.reload_data)
         
-        self.button_show_help = QPushButton(get_icon('dialog_information.png'), '', self)
+        self.button_show_help = QPushButton(get_icon('help.png'), '', self)
         self.button_show_help.setToolTip(_('Show the help about the options and the update policies.'))
         self.button_show_help.clicked.connect(self.show_options_help)
         
