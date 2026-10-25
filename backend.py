@@ -283,7 +283,7 @@ def field_name(field: str, field_metadata: Dict) -> str:
     return f'{name} ({field})'
 
 
-def _parse_isbn(x):
+def parse_isbn(x):
     from calibre.db.write import single_text
     from calibre.ebooks.metadata import check_isbn
     
@@ -295,6 +295,21 @@ def _parse_isbn(x):
     if not rslt:
         return x
     return rslt
+
+
+def adapt_uuid(x):
+    from uuid import UUID
+    
+    from calibre.db.write import single_text
+    
+    x = single_text(x)
+    if not x:
+        return None
+    
+    try:
+        return str(UUID(hex=x, version=4))
+    except Exception:
+        raise ValueError(f'badly formed hexadecimal UUID string: {x!r}')
 
 
 series_index_pat = re.compile(r'(.+)\s+\[([0-9]+(\.[0-9]+)?)\]')
@@ -346,9 +361,11 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
             return x
         return ans
     
+    metadata = defaultdict(dict)
     if name == 'isbn':
-        metadata = defaultdict(dict)
-        adapter =  _parse_isbn
+        adapter =  parse_isbn
+    elif name == 'uuid':
+        adapter =  adapt_uuid
     else:
         metadata = field_metadata[name]
         metadata_alt = field_metadata.get(name[:-len('_index')], {})
@@ -693,7 +710,7 @@ def process_book_ids(field: str, rows: List[UpdateDataRow], options: OptionsUpda
         return
     if field == 'uuid':
         for r in rows:
-            id = db.lookup_by_uuid(r.seek.lower())
+            id = db.lookup_by_uuid(r.seek)
             if id:
                 r.book_ids.add(id)
         return
