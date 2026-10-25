@@ -300,8 +300,14 @@ def _parse_isbn(x):
 series_index_pat = re.compile(r'(.+)\s+\[([0-9]+(\.[0-9]+)?)\]')
 
 
-def _split_series_with_index(x):
-    from calibre.db.write import adapt_series_index, single_text
+def adapt_series_index(x):
+    from calibre.db.write import adapt_series_index
+    
+    return max(0.0, adapt_series_index(x))
+
+
+def split_series_with_index(x):
+    from calibre.db.write import single_text
     
     x = single_text(x)
     if not x:
@@ -313,8 +319,8 @@ def _split_series_with_index(x):
     return m.group(1), adapt_series_index(m.group(2))
 
 
-def _series_with_index(x):
-    x = _split_series_with_index(x)
+def series_with_index(x):
+    x = split_series_with_index(x)
     if not x:
         return None
     return f'{x[0]} [{x[1]}]'
@@ -345,8 +351,11 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
         adapter =  _parse_isbn
     else:
         metadata = field_metadata[name]
+        metadata_alt = field_metadata.get(name[:-len('_index')], {})
         if metadata['datatype'] == 'series' and series_with_index:
-            adapter = _series_with_index
+            adapter = series_with_index
+        elif metadata_alt.get('datatype') == 'series':
+            adapter = adapt_series_index
         else:
             adapter = get_adapter(name, metadata)
     
@@ -562,7 +571,7 @@ def _book_ids_series(db: Cache, field: str, rows: List[UpdateDataRow], case_sens
         values = []
         indexs = []
         for r in rows:
-            sn, si = _split_series_with_index(r.seek)
+            sn, si = split_series_with_index(r.seek)
             values.append(UpdateDataRow(seek=sn, data={}, book_ids=set()))
             indexs.append(si)
     
