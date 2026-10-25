@@ -331,7 +331,7 @@ def pick_csv_to_load(parent=None) -> str:
         name='csv dialog',
         title=_('Select a CSV file to load…'),
         filters=[('CSV Files', ['csv'])],
-        all_files=False, select_only_single_file=True,
+        all_files=True, select_only_single_file=True,
     )
     if not archives:
         return None
@@ -343,7 +343,7 @@ def pick_csv_to_export(parent=None) -> str:
         name='csv dialog',
         title=_('Export CSV file as…'),
         filters=[('CSV Files', ['csv'])],
-        add_all_files_filter=False, mode=QFileDialog.FileMode.AnyFile,
+        add_all_files_filter=True, mode=QFileDialog.FileMode.AnyFile,
     )
     fd.setParent(None)
     if not fd.accepted:

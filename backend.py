@@ -420,8 +420,6 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CS
 
 
 def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, series_with_index: bool=False) -> None:
-    from .action import CSV
-    
     db = current_db().new_api
     with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
         writer = csv.writer(f, CSV)
@@ -826,7 +824,7 @@ def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: Opt
             if field not in series_field:
                 continue
             index = f'{series}_index'
-            for k,v in filter(lambda x: '[' in x[1]), value_map.items():
+            for k,v in filter(lambda x: '[' in x[1], value_map.items()):
                 i = uim[index].get(k)
                 if i is None:
                     i = db.field_for(index, k)
