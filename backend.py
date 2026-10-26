@@ -864,9 +864,13 @@ def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: Opt
     updated_ids = set()
     with db.write_lock, db.backend.conn:
         for field, value_map in update_map.items():
-            db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+            updated_ids.update(
+                db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+            )
         for field, value_map in update_index_map.items():
-            db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+            updated_ids.update(
+                db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
+            )
     
     gui = get_gui()
     if gui:
