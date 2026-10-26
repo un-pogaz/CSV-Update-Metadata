@@ -139,25 +139,6 @@ class UpdateScope(Enum):
         return self._data()[self]
 
 
-@dataclass
-class CSVdataError:
-    column: int
-    line: int
-    header: str
-    field: str
-    exc: Exception
-    
-    @property
-    def exc_text(self):
-        return f'{self.exc.__class__.__name__}: {self.exc}'
-
-
-class CSVdata(NamedTuple):
-    headers: List[str]
-    rows: List[List[DataCell]]
-    errors: List[CSVdataError] = None
-
-
 class OptionsUpdate(NamedTuple):
     class Item(NamedTuple):
         label: str
@@ -201,6 +182,25 @@ class OptionsUpdate(NamedTuple):
     @staticmethod
     def values() -> List[Item]:
         yield from OptionsUpdate._data().values()
+
+
+@dataclass
+class CSVdataError:
+    column: int
+    line: int
+    header: str
+    field: str
+    exc: Exception
+    
+    @property
+    def exc_text(self):
+        return f'{self.exc.__class__.__name__}: {self.exc}'
+
+
+class CSVdata(NamedTuple):
+    headers: List[str]
+    rows: List[List[DataCell]]
+    errors: List[CSVdataError] = None
 
 
 class UpdateDataRow(NamedTuple):
