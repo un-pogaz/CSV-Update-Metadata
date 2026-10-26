@@ -305,7 +305,7 @@ class UpdateDataProgress(QProgressDialog):
     def __init__(self, data: CSVdata, options: OptionsUpdate):
         self.data = data
         self.options = options
-        QProgressDialog.__init__(self, '', None, 0, 0, get_gui())
+        QProgressDialog.__init__(self, '', None, 0, 0, parent=get_gui())
         self.setMinimumWidth(500)
         self.setMinimumHeight(100)
         self.setMinimumDuration(100)
