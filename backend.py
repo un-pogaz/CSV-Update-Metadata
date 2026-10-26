@@ -15,7 +15,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Callable, Dict, List, NamedTuple, Set, Tuple, Union
 
 from calibre.db.cache import Cache
@@ -341,6 +341,18 @@ def series_with_index(x):
     return f'{x[0]} [{x[1]}]'
 
 
+def adapt_enumeration(values, x):
+    from calibre.db.write import single_text
+    
+    x = single_text(x)
+    if not x:
+        return None
+    
+    if x not in values:
+        raise ValueError(f'value is not part of allowed enumeration: {x!r}')
+    return x
+
+
 @lru_cache(maxsize=2)
 def unknown_author():
     from calibre.db.write import get_adapter
@@ -373,6 +385,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
             adapter = series_with_index
         elif metadata_alt.get('datatype') == 'series':
             adapter = adapt_series_index
+        elif metadata['datatype'] == 'enumeration':
+            adapter = partial(adapt_enumeration, set(metadata['display']['enum_values']))
         else:
             adapter = get_adapter(name, metadata)
     
