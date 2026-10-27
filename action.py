@@ -101,6 +101,7 @@ LIBRARY_PREFS = PREFS_library()
 LIBRARY_PREFS.defaults['sort_order'] = {'id':0, 'authors':1, 'series':2, 'series_index':3, 'title':4}
 LIBRARY_PREFS.defaults['fields'] = ['id', 'authors', 'series', 'series_index', 'title']
 LIBRARY_PREFS.defaults['series_with_index'] = False
+LIBRARY_PREFS.defaults['space_newline'] = False
 
 
 class HtmlInfoDialog(Dialog):
@@ -386,7 +387,14 @@ class ExportCSVdialog(Dialog):
         l.addLayout(h)
         self.series_with_index = QCheckBox(_('Add the index to the series-type fields'), self)
         self.series_with_index.setChecked(LIBRARY_PREFS['series_with_index'])
+        self.space_newline = QCheckBox(_('Replace newline characters by space'), self)
+        self.space_newline.setChecked(LIBRARY_PREFS['space_newline'])
         h.addWidget(self.series_with_index)
+        h.addWidget(self.space_newline)
+        h.addStretch()
+        
+        h = QHBoxLayout()
+        l.addLayout(h)
         h.addStretch()
         self.select_all_button = QPushButton(_('Select &all'))
         self.select_all_button.clicked.connect(self.select_all)
@@ -452,7 +460,8 @@ class ExportCSVdialog(Dialog):
         LIBRARY_PREFS['sort_order'] = sort_order
         LIBRARY_PREFS['fields'] = list(fields.keys())
         LIBRARY_PREFS['series_with_index'] = swi = self.series_with_index.isChecked()
-        export_csv_file(file, fields, self.ids, series_with_index=swi)
+        LIBRARY_PREFS['space_newline'] = snl = self.space_newline.isChecked()
+        export_csv_file(file, fields, self.ids, series_with_index=swi, replace_newline_space=snl)
         Dialog.accept(self)
 
 

@@ -459,8 +459,16 @@ def load_csv_file(csv_path: str, validate: bool=True, sanitize: bool=True) -> CS
     return CSVdata(header, data)
 
 
-def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, series_with_index: bool=False) -> None:
+def export_csv_file(
+    csv_path: str,
+    fields: Dict[str, str],
+    ids: List[int],
+    *,
+    series_with_index: bool=False,
+    replace_newline_space: bool=False,
+) -> None:
     db = current_db().new_api
+    nlc = ' ' if replace_newline_space else '\n'
     with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
         writer = csv.writer(f, CSV)
         writer.writerow(fields.values())
@@ -469,7 +477,8 @@ def export_csv_file(csv_path: str, fields: Dict[str, str], ids: List[int], *, se
             mi = db.get_metadata(id)
             for field in fields.keys():
                 value = mi.format_field(field, series_with_index=series_with_index)[1] or ''
-                row.append(value.strip())
+                value = nlc.join(value.strip().splitlines())
+                row.append(value)
             writer.writerow(row)
 
 
