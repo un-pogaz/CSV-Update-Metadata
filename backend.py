@@ -470,6 +470,7 @@ def export_csv_file(
     db = current_db().new_api
     nlc = ' ' if replace_newline_space else '\n'
     with open(csv_path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write('\ufeff')  # UTF-8 BOM
         writer = csv.writer(f, CSV)
         writer.writerow(fields.values())
         for id in ids:

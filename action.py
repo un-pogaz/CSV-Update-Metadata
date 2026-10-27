@@ -203,7 +203,8 @@ class UpdateOptionsHelp(HtmlInfoDialog):
         )))
         self.append('p', _('If the cell of the seeked value is empty, the line is ignored.'))
         self.append('p', _('Additionaly, the tags-like fields can be selected depending of the following criteria. '
-                        'Note that the case sensitivity option is also taken into account during this comparison.'))
+                        'Note that the case sensitivity option is also taken into account during this comparison, '
+                        'and that the match is perform regardeless of the ordre of the items.'))
         self.append('', self.list_builder(*(
             _('<b>{}</b>: {}').format(e.label, e.description) for e in TagsMatch.__members__.values()
         )))
