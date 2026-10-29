@@ -99,7 +99,7 @@ class TagsMatch(Enum):
             ),
             TagsMatch.contain: (
                 _('Contain'),
-                _('Match any book that are equal or contain of the seeked values, regardeless if the book have more values.<br>'
+                _('Match any book that are equal or contain the seeked values, regardeless if the book have more values.<br>'
                 'For example, the CSV value "green, blue" will macth any book with the same value, but also "green, blue, red".'),
             ),
             TagsMatch.subset: (
@@ -178,7 +178,7 @@ class OptionsUpdate(NamedTuple):
             'ignore_errors': OptionsUpdate.Item(
                 _('Ignore errors'),
                 _('Update and ignore any errors (the field will be not updated).<br>'
-                'Note that errors are still show in the preview displayed for informational purposes.'),
+                'Note that errors are still show in the preview for informational purposes.'),
             ),
         }
     

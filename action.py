@@ -199,7 +199,7 @@ class UpdateOptionsHelp(HtmlInfoDialog):
                         'to represent a value and that a sole id without a value is ignored. Therefore, to delete '
                         'a identifier, you need to used "id:NULL" to delete this id. You can specified severals identifiers '
                         'separated by comma for a single book that will match them all.'))
-        self.append('p', _('To update the metadata, you need to specified wich columns of CSV values the plugin need '
+        self.append('p', _('To update the metadata, you need to specified wich column of CSV values the plugin need '
                         'to seek in the library, and wich field this values need to match, depending of several mode:'))
         self.append('', self.list_builder(*(
             _('<b>{}</b>: {}').format(e.label, e.description) for e in MatchType.__members__.values()
@@ -224,7 +224,7 @@ class UpdateOptionsHelp(HtmlInfoDialog):
         )))
         self.append('p', _("It's also possible to restrain the update to a specific scope of books."))
         self.append('', self.list_builder(*(
-            _('<b>{}</b>').format(e.label) for e in UpdateScope.__members__.values()
+            '<b>{}</b>'.format(e.label) for e in UpdateScope.__members__.values()
         )))
 
 
@@ -743,7 +743,7 @@ class UpdateCSVdialog(Dialog):
             data = load_csv_file(self.csv_path)
         except Exception as err:
             msg = '<br>'.join([
-                _('The reload of the CSV file fail is a malformed format.'),
+                _('The reload of the CSV file fail because is a malformed format.'),
                 _('To be sure to use a valid format, check the section "About the CSV Format".'),
             ])
             error_dialog(
@@ -759,7 +759,7 @@ class UpdateCSVdialog(Dialog):
         self.populate()
 
     def populate(self):
-        self.button_raw_data.setText(' '+_('Column: {} | Row: {}').format(len(self.csv_data.headers), len(self.csv_data.rows)))
+        self.button_raw_data.setText(' '+_('Columns: {} | Rows: {}').format(len(self.csv_data.headers), len(self.csv_data.rows)))
         
         all_headers = {i:f'[{i+1}] {h}' for i,h in enumerate(self.csv_data.headers)}
         self.reference_header.clear()
