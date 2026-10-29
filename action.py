@@ -594,8 +594,11 @@ class ViewCSVdataDialog(Dialog):
             h.addWidget(btn)
             h.addStretch()
             l.addLayout(h)
-        elif self.validate:
-            l.addWidget(self.bb)
+        if self.validate:
+            if not self.data.errors:
+                l.addWidget(self.bb)
+            elif self.options.ignore_errors:
+                l.addWidget(self.bb)
     
     def show_data_error_viewer(self):
         DataErrorViewer(self.data.errors, self).exec()
@@ -871,7 +874,9 @@ class UpdateCSVdialog(Dialog):
 
     def accept(self):
         rslt = self.preview_update_data(validate=True)
-        if not rslt or rslt[0].errors:
+        if not rslt:
+            return
+        if rslt[0].errors and not rslt[1].ignore_errors:
             return
         self.output = rslt
         Dialog.accept(self)
@@ -881,7 +886,10 @@ class UpdateCSVdialog(Dialog):
         if not rslt:
             return None
         data, options = rslt
-        if validate and data.errors:
+        has_errors = False
+        if validate and not options.ignore_errors:
+            has_errors = bool(data.errors)
+        if has_errors:
             error_dialog(
                 self,
                 _('Invalid data to update'),
@@ -901,6 +909,8 @@ class UpdateCSVdialog(Dialog):
             has_reference=True,
             parent=self,
         ).exec()
-        if d != Dialog.DialogCode.Accepted or data.errors:
+        if d != Dialog.DialogCode.Accepted:
+            return None
+        if data.errors and not options.ignore_errors:
             return None
         return data, options

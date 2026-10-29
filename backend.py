@@ -152,6 +152,8 @@ class OptionsUpdate(NamedTuple):
     tags_match: TagsMatch = TagsMatch.equal
     update_scope: UpdateScope = UpdateScope.library
     
+    ignore_errors: bool = False
+    
     @staticmethod
     def _data() -> Dict[str, Item]:
         return {
@@ -172,6 +174,11 @@ class OptionsUpdate(NamedTuple):
                 'the plugin will replace the case of the library value by the one in the CSV. '
                 'This option have to purpose to preserve the case of the libray version '
                 'of the value instead to use the CSV one.'),
+            ),
+            'ignore_errors': OptionsUpdate.Item(
+                _('Ignore errors'),
+                _('Update and ignore any errors (the field will be not updated).<br>'
+                'Note that errors are still show in the preview displayed for informational purposes.'),
             ),
         }
     
@@ -804,6 +811,8 @@ def build_update_row(data: CSVdata, options: OptionsUpdate) -> List[UpdateDataRo
         for i, cell in enumerate(data_row):
             if i == 0:
                 continue
+            if isinstance(cell, CSVdataError):
+                continue
             if cell == '':
                 continue
             data[headers[i]] = cell
@@ -813,7 +822,7 @@ def build_update_row(data: CSVdata, options: OptionsUpdate) -> List[UpdateDataRo
             book_ids=set(),
         )
     
-    update_data = [f(data.headers, r) for r in data.rows]
+    update_data = [f(data.headers, r) for r in data.rows if not isinstance(r[0], CSVdataError)]
     process_book_ids(data.headers[0], update_data, options)
     restrain_book_ids(update_data, options.update_scope)
     return update_data
