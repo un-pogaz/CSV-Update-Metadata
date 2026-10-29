@@ -21,10 +21,18 @@ The plugin has the following features:
     * Case insensitive
     * Case sensitive
     * Calibre search
+* Tags-like fields options:
+    * Equal
+    * Contain
+    * Subset
 * Update options:
     * Series-type fields include index
     * Append value for tags-type fields
     * Do not change the case if existing
+* Limit update to scope:
+    * Virtual library
+    * Current search
+    * Books selection
 * Tolerate a wide range of differents CSV specifications
 
 This plugin attempt to be a autnomous version and replacement of the similar feature in [Job Spy](https://www.mobileread.com/forums/showthread.php?t=269911) by DaltonST. The only main unported feature is the support of SQL snippet and regex, however this plugin support the use of the Calibre search.
