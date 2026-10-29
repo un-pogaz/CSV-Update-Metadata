@@ -23,7 +23,7 @@ from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField,
 from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
-from .common_utils import CALIBRE_VERSION, current_db, get_gui
+from .common_utils import CALIBRE_VERSION, current_db
 from .common_utils.librarys import get_BookIds_search, get_BookIds_selected, get_BookIds_virtual
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
@@ -895,8 +895,4 @@ def update_library_data(update_map: Dict[str, Dict[str, DataCell]], options: Opt
             updated_ids.update(
                 db.set_field(field, value_map, allow_case_change=allow_case_change, do_path_update=True)
             )
-    
-    gui = get_gui()
-    if gui:
-        gui.iactions['Edit Metadata'].refresh_gui(updated_ids, covers_changed=False)
     return updated_ids

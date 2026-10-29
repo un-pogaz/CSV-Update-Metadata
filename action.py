@@ -321,9 +321,15 @@ class UpdateDataProgress(QProgressDialog):
 
     def run_job(self):
         try:
+            debug_print('Updating Library...')
+            debug_print('Fields:', ', '.join(self.data.headers))
+            debug_print('Row count:', len(self.data.rows))
+            debug_print('Options:', self.options)
             update_row = build_update_row(self.data, self.options)
             update_map = build_update_map(update_row, self.options)
             update_ids = update_library_data(update_map, self.options)
+            debug_print('Updated books count:', len(update_ids))
+            get_gui().iactions['Edit Metadata'].refresh_gui(update_ids, covers_changed=False)
         finally:
             self.close()
 
