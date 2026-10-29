@@ -360,6 +360,13 @@ def adapt_enumeration(values, x):
     return x
 
 
+def adapt_authors(x):
+    from calibre.db.write import multiple_text
+    m = {'cache_to_list': ',', 'ui_to_list': '&', 'list_to_ui': ' & '}
+    rslt = multiple_text(m['ui_to_list'], m['list_to_ui'], x)
+    return tuple(y.replace('|', ',') for y in rslt)
+
+
 @lru_cache(maxsize=2)
 def unknown_author():
     from calibre.db.write import get_adapter
@@ -385,6 +392,8 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
         adapter =  parse_isbn
     elif name == 'uuid':
         adapter =  adapt_uuid
+    elif name == 'authors':
+        adapter =  adapt_authors
     else:
         metadata = field_metadata[name]
         metadata_alt = field_metadata.get(name[:-len('_index')], {})
@@ -409,8 +418,6 @@ def get_adapter(name: str, field_metadata: Dict, *, series_with_index=False) -> 
         if isinstance(rslt, (list, tuple, set, dict)) and not rslt:
             return None
         if isinstance(rslt, datetime) and is_date_undefined(rslt):
-            return None
-        if name == 'authors' and rslt == unknown_author():
             return None
         if name == 'author_sort' and not rslt:
             return None
