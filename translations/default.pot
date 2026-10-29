@@ -1,0 +1,717 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2026-10-29 18:24+0100\n"
+"PO-Revision-Date: 2023-08-08 19:22+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.10\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: __init__.py:27
+msgid "Update and export Metadata from a CSV file"
+msgstr ""
+
+#: action.py:152
+msgid "CSV Format info"
+msgstr ""
+
+#: action.py:153
+msgid "CSV format"
+msgstr ""
+
+#: action.py:156
+msgid "A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. A CSV file stores tabular data in plain text. Each line of the file is a data rows. Each rows consists of one or more values, separated by commas. The use of the comma as a value separator is the source of the name for this file format."
+msgstr ""
+
+#: action.py:160
+msgid "Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, but this plugin can tolerate some of such difference as input."
+msgstr ""
+
+#: action.py:162
+msgid "The CSV format prefered by the plugin is the following:"
+msgstr ""
+
+#: action.py:164
+msgid "The entire file must be saved in the Unicode (UTF-8) encoding."
+msgstr ""
+
+#: action.py:165
+msgid "The value delimiter (column separator) must be a single comma (not tab-separated or fixed width)."
+msgstr ""
+
+#: action.py:166
+msgid "The CSV require at least two columns."
+msgstr ""
+
+#: action.py:167
+msgid "The CSV require at least two rows/lines:"
+msgstr ""
+
+#: action.py:168
+msgid "The first row must be a \"header\" row which contains the double-quoted textual name of each column."
+msgstr ""
+
+#: action.py:169
+msgid "All rows after the first row must contain either textual values or empty within each and every column."
+msgstr ""
+
+#: action.py:170
+msgid "All rows must have the same number of double-quoted textual columns as the \"header\" row."
+msgstr ""
+
+#: action.py:172
+msgid "All values should preferably be double-quoted."
+msgstr ""
+
+#: action.py:173
+msgid "To include a double-quote character inside a value, write two double-quote consecutively <code>\"\"</code>."
+msgstr ""
+
+#: action.py:175
+msgid "Is possible to insert a new line inside a double-quoted value, however not all software supports it properly. This plugin do."
+msgstr ""
+
+#: action.py:177
+msgid "Leading and trailing spaces will be removed from each value automatically."
+msgstr ""
+
+#: action.py:178
+msgid "Empty value will be skipped (no edit action)."
+msgstr ""
+
+#: action.py:179
+msgid "To indicate that you want <i>delete</i> a value, you should use the special keyword \"NULL\" (full case)."
+msgstr ""
+
+#: action.py:182
+msgid "The plugin use the default library <code>csv</code> to import and convert files. For reference, here the code of <code>csv.Dialect</code> class used:"
+msgstr ""
+
+#: action.py:188
+msgid "Update options help"
+msgstr ""
+
+#: action.py:189
+msgid "Update options"
+msgstr ""
+
+#: action.py:196
+msgid "Empty cell value will be skipped (no edit action)."
+msgstr ""
+
+#: action.py:197
+msgid "The cell with the special keyword \"NULL\" (full case) will <i>delete</i> the value."
+msgstr ""
+
+#: action.py:198
+msgid "The field \"Identifiers\" behave a bit differently, since it require a <code>id:value</code> pair to represent a value and that a sole id without a value is ignored. Therefore, to delete a identifier, you need to used \"id:NULL\" to delete this id. You can specified severals identifiers separated by comma for a single book that will match them all."
+msgstr ""
+
+#: action.py:202
+msgid "To update the metadata, you need to specified wich columns of CSV values the plugin need to seek in the library, and wich field this values need to match, depending of several mode:"
+msgstr ""
+
+#: action.py:205 action.py:212 action.py:223
+#, python-brace-format
+msgid "<b>{}</b>: {}"
+msgstr ""
+
+#: action.py:207
+msgid "If the cell of the seeked value is empty, the line is ignored."
+msgstr ""
+
+#: action.py:208
+msgid "Additionaly, the tags-like fields can be selected depending of the following criteria. Note that the case sensitivity option is also taken into account during this comparison, and that the match is perform regardeless of the ordre of the items."
+msgstr ""
+
+#: action.py:214
+msgid "Once the book search options have been configured, you need to define wich columns of the CSV file will serve as source for update the fields on the library. A field can be selected as destination only once."
+msgstr ""
+
+#: action.py:217
+msgid "During the update, the plugin will process to update the rows up to down, consequently if multiple rows modify the same book, the one at the bottom of the file will take the precedent."
+msgstr ""
+
+#: action.py:220
+msgid "The following options allow to control how to update some specific field. Note that these options are global and are apply to the entire file."
+msgstr ""
+
+#: action.py:225
+msgid "It's also possible to restrain the update to a specific scope of books."
+msgstr ""
+
+#: action.py:227
+#, python-brace-format
+msgid "<b>{}</b>"
+msgstr ""
+
+#: action.py:234
+msgid "Update Metadata from a CSV file template"
+msgstr ""
+
+#: action.py:254
+msgid "&Update Metadata from CSV"
+msgstr ""
+
+#: action.py:258
+msgid "&Export CSV"
+msgstr ""
+
+#: action.py:263
+msgid "&About the CSV Format"
+msgstr ""
+
+#: action.py:284
+msgid "The selected CSV file fail to be loaded because is a malformed format."
+msgstr ""
+
+#: action.py:285 action.py:747
+msgid "To be sure to use a valid format, check the section \"About the CSV Format\"."
+msgstr ""
+
+#: action.py:289 action.py:751
+msgid "Malformed CSV format"
+msgstr ""
+
+#: action.py:318
+msgid "Updating data from CSV"
+msgstr ""
+
+#: action.py:319
+msgid "Updating Library…"
+msgstr ""
+
+#: action.py:343
+msgid "Select a CSV file to load…"
+msgstr ""
+
+#: action.py:355
+msgid "Export CSV file as…"
+msgstr ""
+
+#: action.py:376
+msgid "Export metadata to CSV"
+msgstr ""
+
+#: action.py:385
+msgid "Fields to export in output:"
+msgstr ""
+
+#: action.py:394
+msgid "Drag and drop to re-arrange fields"
+msgstr ""
+
+#: action.py:398
+msgid "Add the index to the series-type fields"
+msgstr ""
+
+#: action.py:400
+msgid "Replace newline characters by space"
+msgstr ""
+
+#: action.py:409
+msgid "Select &all"
+msgstr ""
+
+#: action.py:411
+msgid "Select &none"
+msgstr ""
+
+#: action.py:413
+msgid "Select &visible"
+msgstr ""
+
+#: action.py:464
+msgid "No field selected"
+msgstr ""
+
+#: action.py:481 action.py:898
+msgid "Invalid data to update"
+msgstr ""
+
+#: action.py:518
+msgid "View CSV content data"
+msgstr ""
+
+#: action.py:538
+#, python-brace-format
+msgid "Tags field: {}"
+msgstr ""
+
+#: action.py:540
+#, python-brace-format
+msgid "Update scope: {}"
+msgstr ""
+
+#: action.py:543
+msgid "Update options:"
+msgstr ""
+
+#: action.py:593
+msgid "View errors"
+msgstr ""
+
+#: action.py:612 action.py:737 common_utils/dialogs.py:473
+msgid "Are you sure?"
+msgstr ""
+
+#: action.py:613
+msgid "Are you sure you want to update the library with this values? There is no undo."
+msgstr ""
+
+#: action.py:628
+msgid "Update metadata from CSV"
+msgstr ""
+
+#: action.py:647
+msgid "View the raw content of the loaded CSV file."
+msgstr ""
+
+#: action.py:653
+msgid "Reload the content from the CSV file."
+msgstr ""
+
+#: action.py:657
+msgid "Show the help about the options and the update policies."
+msgstr ""
+
+#: action.py:685
+msgid "CSV column to seek:"
+msgstr ""
+
+#: action.py:686
+msgid "Book field to match:"
+msgstr ""
+
+#: action.py:691
+msgid "Book match mode:"
+msgstr ""
+
+#: action.py:692
+msgid "Tag field match:"
+msgstr ""
+
+#: action.py:693
+msgid "Update scope:"
+msgstr ""
+
+#: action.py:723
+msgid "Preview update"
+msgstr ""
+
+#: action.py:725
+msgid "Update the metadata"
+msgstr ""
+
+#: action.py:738
+msgid "Are you sure you want to reload the CSV file?"
+msgstr ""
+
+#: action.py:746
+msgid "The reload of the CSV file fail is a malformed format."
+msgstr ""
+
+#: action.py:762
+#, python-brace-format
+msgid "Column: {} | Row: {}"
+msgstr ""
+
+#: action.py:808
+msgid "Source CSV is empty"
+msgstr ""
+
+#: action.py:809
+msgid "The source CSV is empty."
+msgstr ""
+
+#: action.py:818
+msgid "No reference header selected"
+msgstr ""
+
+#: action.py:819
+msgid "Select a reference header to seek the books to update."
+msgstr ""
+
+#: action.py:829
+msgid "No reference field selected"
+msgstr ""
+
+#: action.py:830
+msgid "Select a reference field to seek the books to update."
+msgstr ""
+
+#: action.py:852
+msgid "Duplicate updated field"
+msgstr ""
+
+#: action.py:854
+#, python-brace-format
+msgid "The field {} is reference twice as destination for the updating, and therefore cannot be reliably updated."
+msgstr ""
+
+#: action.py:899
+#, python-brace-format
+msgid "The table of updated values contain {} errors. Use \"{}\" to see the details of them."
+msgstr ""
+
+#: backend.py:61
+msgid "Case insensitive equal"
+msgstr ""
+
+#: backend.py:62
+msgid "Will match the seeked value, regardeless of the case. Calibre default behavior."
+msgstr ""
+
+#: backend.py:65
+msgid "Case sensitive equal"
+msgstr ""
+
+#: backend.py:66
+msgid "Strictly match the seeked value, with taking account of the case."
+msgstr ""
+
+#: backend.py:69
+msgid "Calibre search"
+msgstr ""
+
+#: backend.py:70
+#, python-brace-format
+msgid "Use the <a href=\"{}\">Calibre search engine</a>. No book field to match is required for this mode."
+msgstr ""
+
+#: backend.py:97
+msgid "Equal"
+msgstr ""
+
+#: backend.py:98
+msgid "Only match books that have the <i>exact</i> same collection of values."
+msgstr ""
+
+#: backend.py:101
+msgid "Contain"
+msgstr ""
+
+#: backend.py:102
+msgid "Match any book that are equal or contain of the seeked values, regardeless if the book have more values.<br>For example, the CSV value \"green, blue\" will macth any book with the same value, but also \"green, blue, red\"."
+msgstr ""
+
+#: backend.py:106
+msgid "Subset"
+msgstr ""
+
+#: backend.py:107
+msgid "Match any book that are equal or a subset of the seeked values. Presence of any foreign value will invalid the match.<br>For example, the CSV value \"green, blue, red\" will macth any book with the same value, but also \"green, blue\", but not \"green, blue, black\"."
+msgstr ""
+
+#: backend.py:131
+msgid "No restrain"
+msgstr ""
+
+#: backend.py:132
+msgid "Virtual library"
+msgstr ""
+
+#: backend.py:133
+msgid "Current search"
+msgstr ""
+
+#: backend.py:134
+msgid "Selection"
+msgstr ""
+
+#: backend.py:161
+msgid "Series-type fields include index"
+msgstr ""
+
+#: backend.py:162
+#, python-brace-format
+msgid "The value contain both the series name and the series index with the Calibre format \"{}\"."
+msgstr ""
+
+#: backend.py:163
+msgid "&lt;Series name&gt; [&lt;Index&gt;]"
+msgstr ""
+
+#: backend.py:166
+msgid "Append value for tags-type fields"
+msgstr ""
+
+#: backend.py:167
+msgid "By default, the plugin completely replace the values of the tags-type fields by the one provide in the CSV. This option allow to merge the CSV value to the one inside the library."
+msgstr ""
+
+#: backend.py:171
+msgid "Do not change the case if existing"
+msgstr ""
+
+#: backend.py:172
+msgid "When updating a value that it similar to a value already existing in the library, if the values are textualy the same but only the case is different, by default the plugin will replace the case of the library value by the one in the CSV. This option have to purpose to preserve the case of the libray version of the value instead to use the CSV one."
+msgstr ""
+
+#: backend.py:179
+msgid "Ignore errors"
+msgstr ""
+
+#: backend.py:180
+msgid "Update and ignore any errors (the field will be not updated).<br>Note that errors are still show in the preview displayed for informational purposes."
+msgstr ""
+
+#: backend.py:282
+msgid "Library name"
+msgstr ""
+
+#: backend.py:287
+msgid "Index"
+msgstr ""
+
+#: backend.py:443
+msgid "The input CSV is empty."
+msgstr ""
+
+#: backend.py:450
+msgid "The input CSV need at least 2 rows (one for the header and the others for the data)."
+msgstr ""
+
+#: backend.py:452
+msgid "The input CSV need at least 2 columns (one has reference and the others for the data)."
+msgstr ""
+
+#: backend.py:786
+msgid "The type of the field {!r} is not supported."
+msgstr ""
+
+#: common_utils/__init__.py:406
+msgid "You cannot configure this plugin before calibre is restarted."
+msgstr ""
+
+#: common_utils/dialogs.py:81 common_utils/dialogs.py:115
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: common_utils/dialogs.py:118
+msgid "Edit the keyboard shortcuts associated with this plugin"
+msgstr ""
+
+#: common_utils/dialogs.py:134
+msgid "Preferences for:"
+msgstr ""
+
+#: common_utils/dialogs.py:157
+msgid "Clear all settings for this plugin"
+msgstr ""
+
+#: common_utils/dialogs.py:199
+msgid "The changes cannot be applied."
+msgstr ""
+
+#: common_utils/dialogs.py:203
+msgid "Are you sure you want to change your settings in this library for this plugin?"
+msgstr ""
+
+#: common_utils/dialogs.py:204 common_utils/dialogs.py:216
+msgid "Any settings in other libraries or stored in a JSON file in your calibre plugins folder will not be touched."
+msgstr ""
+
+#: common_utils/dialogs.py:215
+msgid "Are you sure you want to clear your settings in this library for this plugin?"
+msgstr ""
+
+#: common_utils/dialogs.py:238
+msgid "View library preferences"
+msgstr ""
+
+#: common_utils/dialogs.py:239
+msgid "View data stored in the library database for this plugin"
+msgstr ""
+
+#: common_utils/dialogs.py:268
+msgid "Cancel"
+msgstr ""
+
+#: common_utils/dialogs.py:278
+#, python-brace-format
+msgid "{PLUGIN_NAME} progress"
+msgstr ""
+
+#: common_utils/dialogs.py:334
+#, python-brace-format
+msgid "Book {:d} of {:d}"
+msgstr ""
+
+#: common_utils/dialogs.py:370
+msgid "Copy to clipboard"
+msgstr ""
+
+#: common_utils/dialogs.py:389
+msgid "Add New Image"
+msgstr ""
+
+#: common_utils/dialogs.py:397
+msgid "&Select image source"
+msgstr ""
+
+#: common_utils/dialogs.py:400
+msgid "From &web domain favicon"
+msgstr ""
+
+#: common_utils/dialogs.py:407
+msgid "From .png &file"
+msgstr ""
+
+#: common_utils/dialogs.py:420
+msgid "&Save as filename:"
+msgstr ""
+
+#: common_utils/dialogs.py:443
+msgid "Select a .png file for the menu icon"
+msgstr ""
+
+#: common_utils/dialogs.py:451 common_utils/dialogs.py:460
+#: common_utils/dialogs.py:464 common_utils/dialogs.py:486
+#: common_utils/dialogs.py:492 common_utils/dialogs.py:494
+#: common_utils/dialogs.py:496
+msgid "Cannot import image"
+msgstr ""
+
+#: common_utils/dialogs.py:451 common_utils/dialogs.py:494
+msgid "Source image must be a .png file."
+msgstr ""
+
+#: common_utils/dialogs.py:460
+msgid "You must specify a filename to save as."
+msgstr ""
+
+#: common_utils/dialogs.py:465
+msgid "The save as filename should consist of a filename only."
+msgstr ""
+
+#: common_utils/dialogs.py:474
+msgid "An image with this name already exists - overwrite it?"
+msgstr ""
+
+#: common_utils/dialogs.py:486
+msgid "You must specify a web domain url"
+msgstr ""
+
+#: common_utils/dialogs.py:492
+msgid "You must specify a source file."
+msgstr ""
+
+#: common_utils/dialogs.py:496
+msgid "Source image does not exist!"
+msgstr ""
+
+#: common_utils/dialogs.py:504
+msgid "Select a ZIP archive file to import…"
+msgstr ""
+
+#: common_utils/dialogs.py:516
+msgid "Save ZIP archive file as…"
+msgstr ""
+
+#: common_utils/dialogs.py:529
+msgid "Select a JSON file to import…"
+msgstr ""
+
+#: common_utils/dialogs.py:541
+msgid "Save the JSON file as…"
+msgstr ""
+
+#: common_utils/dialogs.py:578
+#, python-brace-format
+msgid "The {PLUGIN_NAME} plugin has encounter a unhandled exception."
+msgstr ""
+
+#: common_utils/dialogs.py:592
+msgid "Unhandled exception"
+msgstr ""
+
+#: common_utils/librarys.py:49
+msgid "Could not to launch {:s}"
+msgstr ""
+
+#: common_utils/librarys.py:68
+msgid "No book selected"
+msgstr ""
+
+#: common_utils/librarys.py:74
+msgid "No book in the library"
+msgstr ""
+
+#: common_utils/librarys.py:80 common_utils/librarys.py:87
+msgid "No book in the virtual library"
+msgstr ""
+
+#: common_utils/librarys.py:93
+msgid "No book in the current search"
+msgstr ""
+
+#: common_utils/templates.py:49
+msgid "Unknown"
+msgstr ""
+
+#: common_utils/templates.py:56
+msgid "Template Error"
+msgstr ""
+
+#: common_utils/templates.py:57
+msgid "Running the template returned an error:"
+msgstr ""
+
+#: common_utils/templates.py:70
+msgid "Enter a template to test using data from the selected book"
+msgstr ""
+
+#: common_utils/templates.py:77
+msgid "Template editor"
+msgstr ""
+
+#: common_utils/templates.py:106 common_utils/templates.py:109
+msgid "Open the template editor"
+msgstr ""
+
+#: common_utils/widgets.py:86
+msgid "Restart required"
+msgstr ""
+
+#: common_utils/widgets.py:87
+msgid "Title image not found - you must restart Calibre before using this plugin!"
+msgstr ""
+
+#: common_utils/widgets.py:143
+msgid "Undefined"
+msgstr ""
+
+#: common_utils/widgets.py:297
+msgid "Subset of values associate to the books"
+msgstr ""
+
+#: common_utils/widgets.py:298
+msgid "No books"
+msgstr ""
+
+#: common_utils/widgets.py:299
+#, python-brace-format
+msgid "{:d} books (no values)"
+msgstr ""
+
+#: common_utils/widgets.py:300
+#, python-brace-format
+msgid "{:d} books"
+msgstr ""
+
+#: common_utils/widgets.py:425
+msgid "No notes"
+msgstr ""
+
+#: common_utils/widgets.py:479
+msgid "Add New Image…"
+msgstr ""
