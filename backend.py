@@ -44,7 +44,7 @@ class CSV(csv.Dialect):
     delimiter = ','
     quotechar = '"'
     doublequote = True
-    lineterminator = '\n'
+    lineterminator = '\\n'
     quoting = csv.QUOTE_ALL
 '''
 

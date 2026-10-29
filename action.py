@@ -172,6 +172,8 @@ class CSVformatDialog(HtmlInfoDialog):
             _('All values should preferably be double-quoted.')+'\n'+self.list_builder(
                 _('To include a double-quote character inside a value, write two double-quote consecutively <code>""</code>.'),
             ),
+            _('Is possible to insert a new line inside a double-quoted value, however '
+                'not all software supports it properly. This plugin do.'),
             _('Leading and trailing spaces will be removed from each value automatically.'),
             _('Empty value will be skipped (no edit action).'),
             _('To indicate that you want <i>delete</i> a value, you should use the special keyword "NULL" (full case).'),
