@@ -24,10 +24,10 @@ class ActionCSVMetadata(InterfaceActionBase):
     calibre utilities to run without needing to load the GUI libraries.
     '''
     name                    = 'CSV Update Metadata'
-    description             = _('Update Metadata from a CSV file template')
+    description             = _('Update and export Metadata from a CSV file')
     supported_platforms     = ['windows', 'osx', 'linux']
     author                  = 'un_pogaz'
-    version                 = (0, 1, 0)
+    version                 = (1, 0, 0)
     minimum_calibre_version = (5, 0, 0)
     
     actual_plugin = __name__+'.action:CSVMetadataAction'
