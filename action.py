@@ -197,7 +197,8 @@ class UpdateOptionsHelp(HtmlInfoDialog):
         self.append('p', _('The cell with the special keyword "NULL" (full case) will <i>delete</i> the value.'))
         self.append('p', _('The field "Identifiers" behave a bit differently, since it require a <code>id:value</code> pair '
                         'to represent a value and that a sole id without a value is ignored. Therefore, to delete '
-                        'a identifier, you need to used "id:NULL" to delete this id.'))
+                        'a identifier, you need to used "id:NULL" to delete this id. You can specified severals identifiers '
+                        'separated by comma for a single book that will match them all.'))
         self.append('p', _('To update the metadata, you need to specified wich columns of CSV values the plugin need '
                         'to seek in the library, and wich field this values need to match, depending of several mode:'))
         self.append('', self.list_builder(*(
