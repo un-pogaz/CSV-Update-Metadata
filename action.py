@@ -624,6 +624,7 @@ class UpdateCSVdialog(Dialog):
         self.csv_data = data
         self.csv_widget: Dict[int, KeyValueComboBox] = {}
         self.output: Tuple[CSVdata, OptionsUpdate] = None
+        self.help_dialog: Dialog = None
         Dialog.__init__(self,
             title=_('Update metadata from CSV'),
             name='plugin.CSVMetadata:UpdateCSVdialog',
@@ -788,7 +789,9 @@ class UpdateCSVdialog(Dialog):
         self.preview_update_data(validate=False)
 
     def show_options_help(self):
-        UpdateOptionsHelp(self).exec()
+        if not self.help_dialog:
+            self.help_dialog = UpdateOptionsHelp(self)
+        self.help_dialog.show()
 
     def reference_field_changed(self, idx):
         visible = self.reference_field.selected_key() in self.tags_field
