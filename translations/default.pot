@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-10-29 18:24+0100\n"
+"POT-Creation-Date: 2026-11-05 16:54+0100\n"
 "PO-Revision-Date: 2023-08-08 19:22+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -116,7 +116,7 @@ msgid "The field \"Identifiers\" behave a bit differently, since it require a <c
 msgstr ""
 
 #: action.py:202
-msgid "To update the metadata, you need to specified wich columns of CSV values the plugin need to seek in the library, and wich field this values need to match, depending of several mode:"
+msgid "To update the metadata, you need to specified wich column of CSV values the plugin need to seek in the library, and wich field this values need to match, depending of several mode:"
 msgstr ""
 
 #: action.py:205 action.py:212 action.py:223
@@ -148,11 +148,6 @@ msgstr ""
 msgid "It's also possible to restrain the update to a specific scope of books."
 msgstr ""
 
-#: action.py:227
-#, python-brace-format
-msgid "<b>{}</b>"
-msgstr ""
-
 #: action.py:234
 msgid "Update Metadata from a CSV file template"
 msgstr ""
@@ -173,11 +168,11 @@ msgstr ""
 msgid "The selected CSV file fail to be loaded because is a malformed format."
 msgstr ""
 
-#: action.py:285 action.py:747
+#: action.py:285 action.py:748
 msgid "To be sure to use a valid format, check the section \"About the CSV Format\"."
 msgstr ""
 
-#: action.py:289 action.py:751
+#: action.py:289 action.py:752
 msgid "Malformed CSV format"
 msgstr ""
 
@@ -233,7 +228,7 @@ msgstr ""
 msgid "No field selected"
 msgstr ""
 
-#: action.py:481 action.py:898
+#: action.py:481 action.py:901
 msgid "Invalid data to update"
 msgstr ""
 
@@ -259,7 +254,7 @@ msgstr ""
 msgid "View errors"
 msgstr ""
 
-#: action.py:612 action.py:737 common_utils/dialogs.py:473
+#: action.py:612 action.py:738 common_utils/dialogs.py:473
 msgid "Are you sure?"
 msgstr ""
 
@@ -267,97 +262,97 @@ msgstr ""
 msgid "Are you sure you want to update the library with this values? There is no undo."
 msgstr ""
 
-#: action.py:628
+#: action.py:629
 msgid "Update metadata from CSV"
 msgstr ""
 
-#: action.py:647
+#: action.py:648
 msgid "View the raw content of the loaded CSV file."
 msgstr ""
 
-#: action.py:653
+#: action.py:654
 msgid "Reload the content from the CSV file."
 msgstr ""
 
-#: action.py:657
+#: action.py:658
 msgid "Show the help about the options and the update policies."
 msgstr ""
 
-#: action.py:685
+#: action.py:686
 msgid "CSV column to seek:"
 msgstr ""
 
-#: action.py:686
+#: action.py:687
 msgid "Book field to match:"
 msgstr ""
 
-#: action.py:691
+#: action.py:692
 msgid "Book match mode:"
 msgstr ""
 
-#: action.py:692
+#: action.py:693
 msgid "Tag field match:"
 msgstr ""
 
-#: action.py:693
+#: action.py:694
 msgid "Update scope:"
 msgstr ""
 
-#: action.py:723
+#: action.py:724
 msgid "Preview update"
 msgstr ""
 
-#: action.py:725
+#: action.py:726
 msgid "Update the metadata"
 msgstr ""
 
-#: action.py:738
+#: action.py:739
 msgid "Are you sure you want to reload the CSV file?"
 msgstr ""
 
-#: action.py:746
-msgid "The reload of the CSV file fail is a malformed format."
+#: action.py:747
+msgid "The reload of the CSV file fail because is a malformed format."
 msgstr ""
 
-#: action.py:762
+#: action.py:763
 #, python-brace-format
-msgid "Column: {} | Row: {}"
+msgid "Columns: {} | Rows: {}"
 msgstr ""
 
-#: action.py:808
+#: action.py:811
 msgid "Source CSV is empty"
 msgstr ""
 
-#: action.py:809
+#: action.py:812
 msgid "The source CSV is empty."
 msgstr ""
 
-#: action.py:818
+#: action.py:821
 msgid "No reference header selected"
 msgstr ""
 
-#: action.py:819
+#: action.py:822
 msgid "Select a reference header to seek the books to update."
 msgstr ""
 
-#: action.py:829
+#: action.py:832
 msgid "No reference field selected"
 msgstr ""
 
-#: action.py:830
+#: action.py:833
 msgid "Select a reference field to seek the books to update."
 msgstr ""
 
-#: action.py:852
+#: action.py:855
 msgid "Duplicate updated field"
 msgstr ""
 
-#: action.py:854
+#: action.py:857
 #, python-brace-format
 msgid "The field {} is reference twice as destination for the updating, and therefore cannot be reliably updated."
 msgstr ""
 
-#: action.py:899
+#: action.py:902
 #, python-brace-format
 msgid "The table of updated values contain {} errors. Use \"{}\" to see the details of them."
 msgstr ""
@@ -400,7 +395,7 @@ msgid "Contain"
 msgstr ""
 
 #: backend.py:102
-msgid "Match any book that are equal or contain of the seeked values, regardeless if the book have more values.<br>For example, the CSV value \"green, blue\" will macth any book with the same value, but also \"green, blue, red\"."
+msgid "Match any book that are equal or contain the seeked values, regardeless if the book have more values.<br>For example, the CSV value \"green, blue\" will macth any book with the same value, but also \"green, blue, red\"."
 msgstr ""
 
 #: backend.py:106
@@ -461,7 +456,7 @@ msgid "Ignore errors"
 msgstr ""
 
 #: backend.py:180
-msgid "Update and ignore any errors (the field will be not updated).<br>Note that errors are still show in the preview displayed for informational purposes."
+msgid "Update and ignore any errors (the field will be not updated).<br>Note that errors are still show in the preview for informational purposes."
 msgstr ""
 
 #: backend.py:282
@@ -472,19 +467,19 @@ msgstr ""
 msgid "Index"
 msgstr ""
 
-#: backend.py:443
+#: backend.py:450
 msgid "The input CSV is empty."
 msgstr ""
 
-#: backend.py:450
+#: backend.py:457
 msgid "The input CSV need at least 2 rows (one for the header and the others for the data)."
 msgstr ""
 
-#: backend.py:452
+#: backend.py:459
 msgid "The input CSV need at least 2 columns (one has reference and the others for the data)."
 msgstr ""
 
-#: backend.py:786
+#: backend.py:793
 msgid "The type of the field {!r} is not supported."
 msgstr ""
 

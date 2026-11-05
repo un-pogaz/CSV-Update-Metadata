@@ -17,6 +17,7 @@ The plugin has the following features:
 * Preview source CSV content
 * Preview library update
 * Strong data validation before update
+* Tolerate a wide range of differents CSV
 * Match options:
     * Case insensitive
     * Case sensitive
@@ -33,7 +34,6 @@ The plugin has the following features:
     * Virtual library
     * Current search
     * Books selection
-* Tolerate a wide range of differents CSV specifications
 
 This plugin attempt to be a autnomous version and replacement of the similar feature in [Job Spy](https://www.mobileread.com/forums/showthread.php?t=269911) by DaltonST. The only main unported feature is the support of SQL snippet and regex, however this plugin support the use of the Calibre search.
 
@@ -44,7 +44,7 @@ This plugin attempt to be a autnomous version and replacement of the similar fea
 
 **Installation**
 
-Open *Preferences -> Plugins -> Get new plugins* and install the "Mass Search/Replace" plugin.
+Open *Preferences -> Plugins -> Get new plugins* and install the "CSV Update Metadata" plugin.
 You may also download the attached zip file and install the plugin manually, then restart calibre as described in the [Introduction to plugins thread](https://www.mobileread.com/forums/showthread.php?t=118680")
 
 The plugin works for Calibre 5 and later.
