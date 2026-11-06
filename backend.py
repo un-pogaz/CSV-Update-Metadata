@@ -271,23 +271,10 @@ def get_special_fields() -> Tuple[Set[str], Set[str], Set[str]]:
 
 
 def field_name(field: str, field_metadata: Dict) -> str:
+    from .common_utils.librarys import field_name
     if isinstance(field, MatchType):
         return field.label
-    name = None
-    if field == 'isbn':
-        name = 'ISBN'
-    if field == 'uuid':
-        name = 'UUID'
-    if field == 'library_name':
-        name = _('Library name')
-    if field.endswith('_index'):
-        field_serie = field[:-len('_index')]
-        name = field_metadata.get(field_serie, {}).get('name')
-        if name:
-            name = name + ' ' + _('Index')
-    if not name:
-        name = field_metadata[field].get('name') or field
-    return f'{name} ({field})'
+    return field_name(field, field_metadata)
 
 
 def parse_isbn(x):
