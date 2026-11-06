@@ -23,8 +23,8 @@ from calibre.db.fields import IdentifiersField, ManyToManyField, ManyToOneField,
 from calibre.utils.date import is_date_undefined
 from calibre.utils.icu import lower as icu_lower
 
-from .common_utils import CALIBRE_VERSION, current_db
-from .common_utils.librarys import get_BookIds_search, get_BookIds_selected, get_BookIds_virtual
+from .common_utils import current_db
+from .common_utils.librarys import get_all_fields, get_BookIds_search, get_BookIds_selected, get_BookIds_virtual
 
 DataCell = Union[str, int, float, bool, datetime, Tuple[str, ...], Dict[str, Union[str, None]], None]
 
@@ -214,23 +214,6 @@ class UpdateDataRow(NamedTuple):
     seek: DataCell
     data: Dict[str, DataCell]
     book_ids: Set[int]
-
-
-def get_all_fields() -> Set[str]:
-    from calibre.library.catalogs import FIELDS
-    db = current_db()
-    fm = db.field_metadata
-    rslt = set(FIELDS)
-    rslt.difference_update(('all', 'ondevice', 'formats', 'cover'))
-    for field in db.custom_field_keys():
-        if fm[field]['datatype'] == 'composite':
-            continue
-        rslt.add(field)
-        if fm[field]['datatype'] == 'series':
-            rslt.add(field + '_index')
-    if CALIBRE_VERSION >= (9,00,0):
-        rslt.add('pages')
-    return rslt
 
 
 def get_seekable_fields() -> Set[str]:

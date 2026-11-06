@@ -20,8 +20,6 @@ try:
         QFormLayout,
         QHBoxLayout,
         QLabel,
-        QListWidget,
-        QListWidgetItem,
         QMenu,
         QProgressDialog,
         QPushButton,
@@ -43,8 +41,6 @@ except ImportError:
         QFormLayout,
         QHBoxLayout,
         QLabel,
-        QListWidget,
-        QListWidgetItem,
         QMenu,
         QProgressDialog,
         QPushButton,
@@ -59,7 +55,6 @@ except ImportError:
         QWidget,
     )
 
-from calibre.constants import ismacos
 from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, FlowLayout, HTMLDisplay
@@ -78,7 +73,6 @@ from .backend import (
     build_update_row,
     export_csv_file,
     field_name,
-    get_all_fields,
     get_seekable_fields,
     get_special_fields,
     get_writable_fields,
@@ -88,7 +82,8 @@ from .backend import (
     update_library_data,
 )
 from .common_utils import PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_gui, get_icon
-from .common_utils.librarys import get_BookIds_selected, no_launch_error
+from .common_utils.dialogs import ExportMetadataDialog
+from .common_utils.librarys import MetadataExport, get_BookIds_selected
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
 
@@ -98,10 +93,6 @@ PLUGIN_ICON = 'images/plugin.png'
 PREFS = PREFS_json()
 
 LIBRARY_PREFS = PREFS_library()
-LIBRARY_PREFS.defaults['sort_order'] = {'id':0, 'authors':1, 'series':2, 'series_index':3, 'title':4}
-LIBRARY_PREFS.defaults['fields'] = ['id', 'authors', 'series', 'series_index', 'title']
-LIBRARY_PREFS.defaults['series_with_index'] = False
-LIBRARY_PREFS.defaults['space_newline'] = False
 
 
 class HtmlInfoDialog(Dialog):
@@ -369,110 +360,25 @@ def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
     item.setFont(font)
 
 
-class ExportCSVdialog(Dialog):
-    def __init__(self, ids: List[int]=[], parent=None):
-        self.ids = ids or []
-        Dialog.__init__(self,
+class ExportCSVdialog(ExportMetadataDialog):
+    def __init__(self, ids: List[int], parent=None):
+        ExportMetadataDialog.__init__(self,
+            library_prefs=LIBRARY_PREFS,
+            book_ids=ids,
             title=_('Export metadata to CSV'),
-            name='plugin.CSVMetadata:ExportCSVdialog',
             parent=parent,
         )
 
-    def setup_ui(self):
-        l = QVBoxLayout(self)
-        self.setLayout(l)
-        
-        l.addWidget(QLabel(_('Fields to export in output:'), self))
-        self.list = QListWidget(self)
-        self.list.setDragEnabled(True)
-        self.list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
-        self.list.setDefaultDropAction(Qt.DropAction.CopyAction if ismacos else Qt.DropAction.MoveAction)
-        self.list.setAlternatingRowColors(True)
-        self.list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
-        
-        l.addWidget(self.list)
-        l.addWidget(QLabel(_('Drag and drop to re-arrange fields'), self))
-        
-        h = QHBoxLayout()
-        l.addLayout(h)
-        self.series_with_index = QCheckBox(_('Add the index to the series-type fields'), self)
-        self.series_with_index.setChecked(LIBRARY_PREFS['series_with_index'])
-        self.space_newline = QCheckBox(_('Replace newline characters by space'), self)
-        self.space_newline.setChecked(LIBRARY_PREFS['space_newline'])
-        h.addWidget(self.series_with_index)
-        h.addWidget(self.space_newline)
-        h.addStretch()
-        
-        h = QHBoxLayout()
-        l.addLayout(h)
-        h.addStretch()
-        self.select_all_button = QPushButton(_('Select &all'))
-        self.select_all_button.clicked.connect(self.select_all)
-        self.select_none_button = QPushButton(_('Select &none'))
-        self.select_none_button.clicked.connect(self.select_none)
-        self.select_visible_button = QPushButton(_('Select &visible'))
-        self.select_visible_button.clicked.connect(self.select_visible)
-        h.addWidget(self.select_all_button)
-        h.addWidget(self.select_none_button)
-        h.addWidget(self.select_visible_button)
-        
-        l.addWidget(self.bb)
-        
-        self.poplate_list()
-
-    def poplate_list(self):
-        sort_order = LIBRARY_PREFS['sort_order']
-        fields = LIBRARY_PREFS['fields']
-        fm = current_db().field_metadata
-
-        def key_buider(field):
-            name = field_name(field, fm)
-            return (sort_order.get(field, 1000), sort_key(name)), name, field
-
-        self.list.clear()
-        for _x, name, field in sorted(map(key_buider, get_all_fields())):
-            item = QListWidgetItem(name, self.list)
-            item.setData(Qt.ItemDataRole.UserRole, field)
-            item.setCheckState(Qt.CheckState.Checked if field in fields else Qt.CheckState.Unchecked)
-
-    def select_all(self):
-        for row in range(self.list.count()):
-            self.list.item(row).setCheckState(Qt.CheckState.Checked)
-
-    def select_none(self):
-        for row in range(self.list.count()):
-            self.list.item(row).setCheckState(Qt.CheckState.Unchecked)
-
-    def select_visible(self):
-        state = get_gui().library_view.get_state()
-        hidden = set(state['hidden_columns'])
-        for row in range(self.list.count()):
-            item = self.list.item(row)
-            field = item.data(Qt.ItemDataRole.UserRole)
-            item.setCheckState(Qt.CheckState.Unchecked if field in hidden else Qt.CheckState.Checked)
-
-    def accept(self):
-        sort_order = {}
-        fields = {}
-        for row in range(self.list.count()):
-            item = self.list.item(row)
-            field = item.data(Qt.ItemDataRole.UserRole)
-            sort_order[field] = row
-            if item.checkState() == Qt.CheckState.Checked:
-                fields[field] = item.text()
-        if not fields:
-            return no_launch_error(_('No field selected'))
-        
+    def export_action(self, data: MetadataExport) -> bool:
         file = pick_csv_to_export()
         if not file:
-            return
-        
-        LIBRARY_PREFS['sort_order'] = sort_order
-        LIBRARY_PREFS['fields'] = list(fields.keys())
-        LIBRARY_PREFS['series_with_index'] = swi = self.series_with_index.isChecked()
-        LIBRARY_PREFS['space_newline'] = snl = self.space_newline.isChecked()
-        export_csv_file(file, fields, self.ids, series_with_index=swi, replace_newline_space=snl)
-        Dialog.accept(self)
+            return False
+        export_csv_file(
+            file, data.fields, data.book_ids,
+            series_with_index=data.series_with_index,
+            replace_newline_space=data.replace_newline_space,
+        )
+        return True
 
 
 class DataErrorViewer(QDialog):
