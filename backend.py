@@ -222,9 +222,7 @@ def get_all_fields() -> Set[str]:
     fm = db.field_metadata
     rslt = set(FIELDS)
     rslt.difference_update(('all', 'ondevice', 'formats', 'cover'))
-    for field in db.custom_field_keys():
-        if fm[field]['datatype'] == 'composite':
-            continue
+    for field in fm.custom_field_keys():
         rslt.add(field)
         if fm[field]['datatype'] == 'series':
             rslt.add(field + '_index')
@@ -237,12 +235,12 @@ def get_seekable_fields() -> Set[str]:
     db = current_db()
     fm = db.field_metadata
     rslt = get_all_fields()
-    exclude = set()
-    exclude.add('library_name')
-    exclude.add('comments')
+    exclude = {'library_name', 'comments'}
     for field in rslt:
         if field not in fm:
             continue
+        if fm[field]['datatype'] == 'composite':
+            exclude.add(field)
         if fm[field]['datatype'] == 'datetime':
             exclude.add(field)
         if fm[field]['datatype'] == 'comments' and fm[field]['display'].get('interpret_as') != 'short-text':
@@ -251,8 +249,14 @@ def get_seekable_fields() -> Set[str]:
 
 
 def get_writable_fields() -> Set[str]:
+    db = current_db()
+    fm = db.field_metadata
     rslt = get_all_fields()
-    return rslt.difference(('library_name', 'id', 'uuid', 'size', 'pages'))
+    exclude = {'library_name', 'id', 'uuid', 'size', 'pages'}
+    for field in rslt:
+        if field not in fm:
+            continue
+    return rslt.difference(exclude)
 
 
 def get_special_fields() -> Tuple[Set[str], Set[str], Set[str]]:
