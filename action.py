@@ -87,15 +87,12 @@ from .backend import (
     parse_update_data,
     update_library_data,
 )
-from .common_utils import PLUGIN_NAME, PREFS_json, PREFS_library, current_db, debug_print, get_gui, get_icon
+from .common_utils import PLUGIN_NAME, PREFS_library, current_db, debug_print, get_gui, get_icon
 from .common_utils.librarys import get_BookIds_selected, no_launch_error
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
 
 PLUGIN_ICON = 'images/plugin.png'
-
-# This is where all preferences for this plugin are stored
-PREFS = PREFS_json()
 
 LIBRARY_PREFS = PREFS_library()
 LIBRARY_PREFS.defaults['sort_order'] = {'id':0, 'authors':1, 'series':2, 'series_index':3, 'title':4}
