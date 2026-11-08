@@ -16,7 +16,6 @@ try:
     from qt.core import (
         QCheckBox,
         QDialog,
-        QFileDialog,
         QFormLayout,
         QHBoxLayout,
         QLabel,
@@ -37,7 +36,6 @@ except ImportError:
     from PyQt5.Qt import (
         QCheckBox,
         QDialog,
-        QFileDialog,
         QFormLayout,
         QHBoxLayout,
         QLabel,
@@ -55,7 +53,7 @@ except ImportError:
         QWidget,
     )
 
-from calibre.gui2 import FileDialog, choose_files, error_dialog, question_dialog
+from calibre.gui2 import error_dialog, question_dialog
 from calibre.gui2.actions import InterfaceAction
 from calibre.gui2.widgets2 import Dialog, FlowLayout, HTMLDisplay
 from calibre.utils.icu import sort_key
@@ -83,7 +81,7 @@ from .backend import (
     update_library_data,
 )
 from .common_utils import PLUGIN_NAME, PREFS_library, current_db, debug_print, get_gui, get_icon
-from .common_utils.dialogs import ExportMetadataDialog
+from .common_utils.dialogs import ExportMetadataDialog, pick_file_to_export, pick_file_to_import
 from .common_utils.librarys import get_BookIds_selected
 from .common_utils.menus import create_menu_action_unique
 from .common_utils.widgets import ImageTitleLayout, KeyValueComboBox, NoWheelComboBox
@@ -263,7 +261,7 @@ class CSVMetadataAction(InterfaceAction):
         CSVformatDialog(get_gui()).exec()
     
     def update_metadata(self):
-        path = pick_csv_to_load()
+        path = pick_csv_to_load(get_gui())
         if not path:
             return
         try:
@@ -327,28 +325,11 @@ class UpdateDataProgress(QProgressDialog):
 
 
 def pick_csv_to_load(parent=None) -> str:
-    archives = choose_files(parent or get_gui(),
-        name='csv dialog',
-        title=_('Select a CSV file to load…'),
-        filters=[('CSV Files', ['csv'])],
-        all_files=True, select_only_single_file=True,
-    )
-    if not archives:
-        return None
-    return archives[0]
+    return pick_file_to_import('csv', parent)
 
 
 def pick_csv_to_export(parent=None) -> str:
-    fd = FileDialog(parent=parent or get_gui(),
-        name='csv dialog',
-        title=_('Export CSV file as…'),
-        filters=[('CSV Files', ['csv'])],
-        add_all_files_filter=True, mode=QFileDialog.FileMode.AnyFile,
-    )
-    fd.setParent(None)
-    if not fd.accepted:
-        return None
-    return fd.get_files()[0]
+    return pick_file_to_export('csv', parent)
 
 
 def item_style(item: QWidget, *, bold: bool=False, italic: bool=False):
@@ -377,7 +358,7 @@ class ExportCSVdialog(ExportMetadataDialog):
 
     def export_action(self, fields: Dict[str, str], series_with_index: bool) -> bool:
         replace_newline_space = self.space_newline.isChecked()
-        file = pick_csv_to_export()
+        file = pick_csv_to_export(self)
         if not file:
             return False
         export_csv_file(
