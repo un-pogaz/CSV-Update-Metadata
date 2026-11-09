@@ -27,7 +27,7 @@ class ActionCSVMetadata(InterfaceActionBase):
     description             = _('Update and export Metadata from a CSV file')
     supported_platforms     = ['windows', 'osx', 'linux']
     author                  = 'un_pogaz'
-    version                 = (1, 0, 1)
+    version                 = (1, 0, 2)
     minimum_calibre_version = (5, 0, 0)
     
     actual_plugin = __name__+'.action:CSVMetadataAction'
