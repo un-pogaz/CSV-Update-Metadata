@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-11-05 16:54+0100\n"
+"POT-Creation-Date: 2026-11-09 21:41+0100\n"
 "PO-Revision-Date: 2023-08-08 19:22+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -19,340 +19,304 @@ msgstr ""
 msgid "Update and export Metadata from a CSV file"
 msgstr ""
 
-#: action.py:152
+#: action.py:139
 msgid "CSV Format info"
 msgstr ""
 
-#: action.py:153
+#: action.py:140
 msgid "CSV format"
 msgstr ""
 
-#: action.py:156
+#: action.py:143
 msgid "A comma-separated values (CSV) file is a delimited text file that uses a comma to separate values. A CSV file stores tabular data in plain text. Each line of the file is a data rows. Each rows consists of one or more values, separated by commas. The use of the comma as a value separator is the source of the name for this file format."
 msgstr ""
 
-#: action.py:160
+#: action.py:147
 msgid "Due to the lack of a strict CSV specification, different applications produce subtly different CSV file, but this plugin can tolerate some of such difference as input."
 msgstr ""
 
-#: action.py:162
+#: action.py:149
 msgid "The CSV format prefered by the plugin is the following:"
 msgstr ""
 
-#: action.py:164
+#: action.py:151
 msgid "The entire file must be saved in the Unicode (UTF-8) encoding."
 msgstr ""
 
-#: action.py:165
+#: action.py:152
 msgid "The value delimiter (column separator) must be a single comma (not tab-separated or fixed width)."
 msgstr ""
 
-#: action.py:166
+#: action.py:153
 msgid "The CSV require at least two columns."
 msgstr ""
 
-#: action.py:167
+#: action.py:154
 msgid "The CSV require at least two rows/lines:"
 msgstr ""
 
-#: action.py:168
+#: action.py:155
 msgid "The first row must be a \"header\" row which contains the double-quoted textual name of each column."
 msgstr ""
 
-#: action.py:169
+#: action.py:156
 msgid "All rows after the first row must contain either textual values or empty within each and every column."
 msgstr ""
 
-#: action.py:170
+#: action.py:157
 msgid "All rows must have the same number of double-quoted textual columns as the \"header\" row."
 msgstr ""
 
-#: action.py:172
+#: action.py:159
 msgid "All values should preferably be double-quoted."
 msgstr ""
 
-#: action.py:173
+#: action.py:160
 msgid "To include a double-quote character inside a value, write two double-quote consecutively <code>\"\"</code>."
 msgstr ""
 
-#: action.py:175
+#: action.py:162
 msgid "Is possible to insert a new line inside a double-quoted value, however not all software supports it properly. This plugin do."
 msgstr ""
 
-#: action.py:177
+#: action.py:164
 msgid "Leading and trailing spaces will be removed from each value automatically."
 msgstr ""
 
-#: action.py:178
+#: action.py:165
 msgid "Empty value will be skipped (no edit action)."
 msgstr ""
 
-#: action.py:179
+#: action.py:166
 msgid "To indicate that you want <i>delete</i> a value, you should use the special keyword \"NULL\" (full case)."
 msgstr ""
 
-#: action.py:182
+#: action.py:169
 msgid "The plugin use the default library <code>csv</code> to import and convert files. For reference, here the code of <code>csv.Dialect</code> class used:"
 msgstr ""
 
-#: action.py:188
+#: action.py:175
 msgid "Update options help"
 msgstr ""
 
-#: action.py:189
+#: action.py:176
 msgid "Update options"
 msgstr ""
 
-#: action.py:196
+#: action.py:183
 msgid "Empty cell value will be skipped (no edit action)."
 msgstr ""
 
-#: action.py:197
+#: action.py:184
 msgid "The cell with the special keyword \"NULL\" (full case) will <i>delete</i> the value."
 msgstr ""
 
-#: action.py:198
+#: action.py:185
 msgid "The field \"Identifiers\" behave a bit differently, since it require a <code>id:value</code> pair to represent a value and that a sole id without a value is ignored. Therefore, to delete a identifier, you need to used \"id:NULL\" to delete this id. You can specified severals identifiers separated by comma for a single book that will match them all."
 msgstr ""
 
-#: action.py:202
+#: action.py:189
 msgid "To update the metadata, you need to specified wich column of CSV values the plugin need to seek in the library, and wich field this values need to match, depending of several mode:"
 msgstr ""
 
-#: action.py:205 action.py:212 action.py:223
+#: action.py:192 action.py:199 action.py:210
 #, python-brace-format
 msgid "<b>{}</b>: {}"
 msgstr ""
 
-#: action.py:207
+#: action.py:194
 msgid "If the cell of the seeked value is empty, the line is ignored."
 msgstr ""
 
-#: action.py:208
+#: action.py:195
 msgid "Additionaly, the tags-like fields can be selected depending of the following criteria. Note that the case sensitivity option is also taken into account during this comparison, and that the match is perform regardeless of the ordre of the items."
 msgstr ""
 
-#: action.py:214
+#: action.py:201
 msgid "Once the book search options have been configured, you need to define wich columns of the CSV file will serve as source for update the fields on the library. A field can be selected as destination only once."
 msgstr ""
 
-#: action.py:217
+#: action.py:204
 msgid "During the update, the plugin will process to update the rows up to down, consequently if multiple rows modify the same book, the one at the bottom of the file will take the precedent."
 msgstr ""
 
-#: action.py:220
+#: action.py:207
 msgid "The following options allow to control how to update some specific field. Note that these options are global and are apply to the entire file."
 msgstr ""
 
-#: action.py:225
+#: action.py:212
 msgid "It's also possible to restrain the update to a specific scope of books."
 msgstr ""
 
-#: action.py:234
+#: action.py:221
 msgid "Update Metadata from a CSV file template"
 msgstr ""
 
-#: action.py:254
+#: action.py:241
 msgid "&Update Metadata from CSV"
 msgstr ""
 
-#: action.py:258
+#: action.py:245
 msgid "&Export CSV"
 msgstr ""
 
-#: action.py:263
+#: action.py:250
 msgid "&About the CSV Format"
 msgstr ""
 
-#: action.py:284
+#: action.py:271
 msgid "The selected CSV file fail to be loaded because is a malformed format."
 msgstr ""
 
-#: action.py:285 action.py:748
+#: action.py:272 action.py:643
 msgid "To be sure to use a valid format, check the section \"About the CSV Format\"."
 msgstr ""
 
-#: action.py:289 action.py:752
+#: action.py:276 action.py:647
 msgid "Malformed CSV format"
 msgstr ""
 
-#: action.py:318
+#: action.py:305
 msgid "Updating data from CSV"
 msgstr ""
 
-#: action.py:319
+#: action.py:306
 msgid "Updating Library…"
 msgstr ""
 
-#: action.py:343
-msgid "Select a CSV file to load…"
-msgstr ""
-
-#: action.py:355
-msgid "Export CSV file as…"
-msgstr ""
-
-#: action.py:376
+#: action.py:349
 msgid "Export metadata to CSV"
 msgstr ""
 
-#: action.py:385
-msgid "Fields to export in output:"
-msgstr ""
-
-#: action.py:394
-msgid "Drag and drop to re-arrange fields"
-msgstr ""
-
-#: action.py:398
-msgid "Add the index to the series-type fields"
-msgstr ""
-
-#: action.py:400
+#: action.py:355
 msgid "Replace newline characters by space"
 msgstr ""
 
-#: action.py:409
-msgid "Select &all"
-msgstr ""
-
-#: action.py:411
-msgid "Select &none"
-msgstr ""
-
-#: action.py:413
-msgid "Select &visible"
-msgstr ""
-
-#: action.py:464
-msgid "No field selected"
-msgstr ""
-
-#: action.py:481 action.py:901
+#: action.py:376 action.py:796
 msgid "Invalid data to update"
 msgstr ""
 
-#: action.py:518
+#: action.py:413
 msgid "View CSV content data"
 msgstr ""
 
-#: action.py:538
+#: action.py:433
 #, python-brace-format
 msgid "Tags field: {}"
 msgstr ""
 
-#: action.py:540
+#: action.py:435
 #, python-brace-format
 msgid "Update scope: {}"
 msgstr ""
 
-#: action.py:543
+#: action.py:438
 msgid "Update options:"
 msgstr ""
 
-#: action.py:593
+#: action.py:488
 msgid "View errors"
 msgstr ""
 
-#: action.py:612 action.py:738 common_utils/dialogs.py:473
+#: action.py:507 action.py:633 common_utils/dialogs.py:480
 msgid "Are you sure?"
 msgstr ""
 
-#: action.py:613
+#: action.py:508
 msgid "Are you sure you want to update the library with this values? There is no undo."
 msgstr ""
 
-#: action.py:629
+#: action.py:524
 msgid "Update metadata from CSV"
 msgstr ""
 
-#: action.py:648
+#: action.py:543
 msgid "View the raw content of the loaded CSV file."
 msgstr ""
 
-#: action.py:654
+#: action.py:549
 msgid "Reload the content from the CSV file."
 msgstr ""
 
-#: action.py:658
+#: action.py:553
 msgid "Show the help about the options and the update policies."
 msgstr ""
 
-#: action.py:686
+#: action.py:581
 msgid "CSV column to seek:"
 msgstr ""
 
-#: action.py:687
+#: action.py:582
 msgid "Book field to match:"
 msgstr ""
 
-#: action.py:692
+#: action.py:587
 msgid "Book match mode:"
 msgstr ""
 
-#: action.py:693
+#: action.py:588
 msgid "Tag field match:"
 msgstr ""
 
-#: action.py:694
+#: action.py:589
 msgid "Update scope:"
 msgstr ""
 
-#: action.py:724
+#: action.py:619
 msgid "Preview update"
 msgstr ""
 
-#: action.py:726
+#: action.py:621
 msgid "Update the metadata"
 msgstr ""
 
-#: action.py:739
+#: action.py:634
 msgid "Are you sure you want to reload the CSV file?"
 msgstr ""
 
-#: action.py:747
+#: action.py:642
 msgid "The reload of the CSV file fail because is a malformed format."
 msgstr ""
 
-#: action.py:763
+#: action.py:658
 #, python-brace-format
 msgid "Columns: {} | Rows: {}"
 msgstr ""
 
-#: action.py:811
+#: action.py:706
 msgid "Source CSV is empty"
 msgstr ""
 
-#: action.py:812
+#: action.py:707
 msgid "The source CSV is empty."
 msgstr ""
 
-#: action.py:821
+#: action.py:716
 msgid "No reference header selected"
 msgstr ""
 
-#: action.py:822
+#: action.py:717
 msgid "Select a reference header to seek the books to update."
 msgstr ""
 
-#: action.py:832
+#: action.py:727
 msgid "No reference field selected"
 msgstr ""
 
-#: action.py:833
+#: action.py:728
 msgid "Select a reference field to seek the books to update."
 msgstr ""
 
-#: action.py:855
+#: action.py:750
 msgid "Duplicate updated field"
 msgstr ""
 
-#: action.py:857
+#: action.py:752
 #, python-brace-format
 msgid "The field {} is reference twice as destination for the updating, and therefore cannot be reliably updated."
 msgstr ""
 
-#: action.py:902
+#: action.py:797
 #, python-brace-format
 msgid "The table of updated values contain {} errors. Use \"{}\" to see the details of them."
 msgstr ""
@@ -459,27 +423,19 @@ msgstr ""
 msgid "Update and ignore any errors (the field will be not updated).<br>Note that errors are still show in the preview for informational purposes."
 msgstr ""
 
-#: backend.py:282
-msgid "Library name"
-msgstr ""
-
-#: backend.py:287
-msgid "Index"
-msgstr ""
-
-#: backend.py:450
+#: backend.py:443
 msgid "The input CSV is empty."
 msgstr ""
 
-#: backend.py:457
+#: backend.py:450
 msgid "The input CSV need at least 2 rows (one for the header and the others for the data)."
 msgstr ""
 
-#: backend.py:459
+#: backend.py:452
 msgid "The input CSV need at least 2 columns (one has reference and the others for the data)."
 msgstr ""
 
-#: backend.py:793
+#: backend.py:783
 msgid "The type of the field {!r} is not supported."
 msgstr ""
 
@@ -487,145 +443,179 @@ msgstr ""
 msgid "You cannot configure this plugin before calibre is restarted."
 msgstr ""
 
-#: common_utils/dialogs.py:81 common_utils/dialogs.py:115
+#: common_utils/dialogs.py:88 common_utils/dialogs.py:122
 msgid "Keyboard shortcuts"
 msgstr ""
 
-#: common_utils/dialogs.py:118
+#: common_utils/dialogs.py:125
 msgid "Edit the keyboard shortcuts associated with this plugin"
 msgstr ""
 
-#: common_utils/dialogs.py:134
+#: common_utils/dialogs.py:141
 msgid "Preferences for:"
 msgstr ""
 
-#: common_utils/dialogs.py:157
+#: common_utils/dialogs.py:164
 msgid "Clear all settings for this plugin"
 msgstr ""
 
-#: common_utils/dialogs.py:199
+#: common_utils/dialogs.py:206
 msgid "The changes cannot be applied."
 msgstr ""
 
-#: common_utils/dialogs.py:203
+#: common_utils/dialogs.py:210
 msgid "Are you sure you want to change your settings in this library for this plugin?"
 msgstr ""
 
-#: common_utils/dialogs.py:204 common_utils/dialogs.py:216
+#: common_utils/dialogs.py:211 common_utils/dialogs.py:223
 msgid "Any settings in other libraries or stored in a JSON file in your calibre plugins folder will not be touched."
 msgstr ""
 
-#: common_utils/dialogs.py:215
+#: common_utils/dialogs.py:222
 msgid "Are you sure you want to clear your settings in this library for this plugin?"
 msgstr ""
 
-#: common_utils/dialogs.py:238
+#: common_utils/dialogs.py:245
 msgid "View library preferences"
 msgstr ""
 
-#: common_utils/dialogs.py:239
+#: common_utils/dialogs.py:246
 msgid "View data stored in the library database for this plugin"
 msgstr ""
 
-#: common_utils/dialogs.py:268
+#: common_utils/dialogs.py:275
 msgid "Cancel"
 msgstr ""
 
-#: common_utils/dialogs.py:278
+#: common_utils/dialogs.py:285
 #, python-brace-format
 msgid "{PLUGIN_NAME} progress"
 msgstr ""
 
-#: common_utils/dialogs.py:334
+#: common_utils/dialogs.py:341
 #, python-brace-format
 msgid "Book {:d} of {:d}"
 msgstr ""
 
-#: common_utils/dialogs.py:370
+#: common_utils/dialogs.py:377
 msgid "Copy to clipboard"
 msgstr ""
 
-#: common_utils/dialogs.py:389
+#: common_utils/dialogs.py:396
 msgid "Add New Image"
 msgstr ""
 
-#: common_utils/dialogs.py:397
+#: common_utils/dialogs.py:404
 msgid "&Select image source"
 msgstr ""
 
-#: common_utils/dialogs.py:400
+#: common_utils/dialogs.py:407
 msgid "From &web domain favicon"
 msgstr ""
 
-#: common_utils/dialogs.py:407
+#: common_utils/dialogs.py:414
 msgid "From .png &file"
 msgstr ""
 
-#: common_utils/dialogs.py:420
+#: common_utils/dialogs.py:427
 msgid "&Save as filename:"
 msgstr ""
 
-#: common_utils/dialogs.py:443
+#: common_utils/dialogs.py:450
 msgid "Select a .png file for the menu icon"
 msgstr ""
 
-#: common_utils/dialogs.py:451 common_utils/dialogs.py:460
-#: common_utils/dialogs.py:464 common_utils/dialogs.py:486
-#: common_utils/dialogs.py:492 common_utils/dialogs.py:494
-#: common_utils/dialogs.py:496
+#: common_utils/dialogs.py:458 common_utils/dialogs.py:467
+#: common_utils/dialogs.py:471 common_utils/dialogs.py:493
+#: common_utils/dialogs.py:499 common_utils/dialogs.py:501
+#: common_utils/dialogs.py:503
 msgid "Cannot import image"
 msgstr ""
 
-#: common_utils/dialogs.py:451 common_utils/dialogs.py:494
+#: common_utils/dialogs.py:458 common_utils/dialogs.py:501
 msgid "Source image must be a .png file."
 msgstr ""
 
-#: common_utils/dialogs.py:460
+#: common_utils/dialogs.py:467
 msgid "You must specify a filename to save as."
 msgstr ""
 
-#: common_utils/dialogs.py:465
+#: common_utils/dialogs.py:472
 msgid "The save as filename should consist of a filename only."
 msgstr ""
 
-#: common_utils/dialogs.py:474
+#: common_utils/dialogs.py:481
 msgid "An image with this name already exists - overwrite it?"
 msgstr ""
 
-#: common_utils/dialogs.py:486
+#: common_utils/dialogs.py:493
 msgid "You must specify a web domain url"
 msgstr ""
 
-#: common_utils/dialogs.py:492
+#: common_utils/dialogs.py:499
 msgid "You must specify a source file."
 msgstr ""
 
-#: common_utils/dialogs.py:496
+#: common_utils/dialogs.py:503
 msgid "Source image does not exist!"
 msgstr ""
 
-#: common_utils/dialogs.py:504
+#: common_utils/dialogs.py:525
+msgid "Export metadata"
+msgstr ""
+
+#: common_utils/dialogs.py:534
+msgid "Fields to export in output:"
+msgstr ""
+
+#: common_utils/dialogs.py:543
+msgid "Drag and drop to re-arrange fields"
+msgstr ""
+
+#: common_utils/dialogs.py:547
+msgid "Add the index to the series-type fields"
+msgstr ""
+
+#: common_utils/dialogs.py:555
+msgid "Select &all"
+msgstr ""
+
+#: common_utils/dialogs.py:557
+msgid "Select &none"
+msgstr ""
+
+#: common_utils/dialogs.py:559
+msgid "Select &visible"
+msgstr ""
+
+#: common_utils/dialogs.py:610
+msgid "No field selected"
+msgstr ""
+
+#: common_utils/dialogs.py:632
 msgid "Select a ZIP archive file to import…"
 msgstr ""
 
-#: common_utils/dialogs.py:516
+#: common_utils/dialogs.py:644
 msgid "Save ZIP archive file as…"
 msgstr ""
 
-#: common_utils/dialogs.py:529
-msgid "Select a JSON file to import…"
+#: common_utils/dialogs.py:668
+#, python-brace-format
+msgid "Save the {} file as…"
 msgstr ""
 
-#: common_utils/dialogs.py:541
-msgid "Save the JSON file as…"
+#: common_utils/dialogs.py:683
+#, python-brace-format
+msgid "Select a {} file to import…"
 msgstr ""
 
-#: common_utils/dialogs.py:578
+#: common_utils/dialogs.py:727
 #, python-brace-format
 msgid "The {PLUGIN_NAME} plugin has encounter a unhandled exception."
 msgstr ""
 
-#: common_utils/dialogs.py:592
+#: common_utils/dialogs.py:741
 msgid "Unhandled exception"
 msgstr ""
 
@@ -647,6 +637,14 @@ msgstr ""
 
 #: common_utils/librarys.py:93
 msgid "No book in the current search"
+msgstr ""
+
+#: common_utils/librarys.py:231
+msgid "Library name"
+msgstr ""
+
+#: common_utils/librarys.py:239
+msgid "Index"
 msgstr ""
 
 #: common_utils/templates.py:49
@@ -685,28 +683,28 @@ msgstr ""
 msgid "Undefined"
 msgstr ""
 
-#: common_utils/widgets.py:297
+#: common_utils/widgets.py:296
 msgid "Subset of values associate to the books"
 msgstr ""
 
-#: common_utils/widgets.py:298
+#: common_utils/widgets.py:297
 msgid "No books"
 msgstr ""
 
-#: common_utils/widgets.py:299
+#: common_utils/widgets.py:298
 #, python-brace-format
 msgid "{:d} books (no values)"
 msgstr ""
 
-#: common_utils/widgets.py:300
+#: common_utils/widgets.py:299
 #, python-brace-format
 msgid "{:d} books"
 msgstr ""
 
-#: common_utils/widgets.py:425
+#: common_utils/widgets.py:424
 msgid "No notes"
 msgstr ""
 
-#: common_utils/widgets.py:479
+#: common_utils/widgets.py:478
 msgid "Add New Image…"
 msgstr ""
