@@ -35,7 +35,7 @@ The plugin has the following features:
     * Current search
     * Books selection
 
-This plugin attempt to be a autnomous version and replacement of the similar feature in [Job Spy](https://www.mobileread.com/forums/showthread.php?t=269911) by DaltonST. The only main unported feature is the support of SQL snippet and regex, however this plugin support the use of the Calibre search.
+This plugin attempt to be a autonomous version and replacement of the similar feature in [Job Spy](https://www.mobileread.com/forums/showthread.php?t=269911) by DaltonST. The only main unported feature is the support of SQL snippet and regex, however this plugin support the use of the Calibre search.
 
 **Special Notes:**
 
